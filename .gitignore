@@ -1,7 +1,7 @@
 __pycache__/
 .mypy_cache/
 .ruff_cache/
-
+.DS_Store
 maze.txt
 .synced
 wheels/mlx-2.2-py3-none-any.whl
