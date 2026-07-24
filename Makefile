@@ -2,7 +2,10 @@ PYTHON := uv run python
 MAIN := a_maze_ing.py
 CONFIG := default_config.txt
 
-SRC = ./a_maze_ing.py ./config_parser.py
+SRC = $(MAIN) \
+	./src/parser.py \
+	./src/models.py \
+	./tests/test_parser.py
 
 SYNC := .synced
 
@@ -27,8 +30,8 @@ clean:
 
 lint: $(SYNC)
 	ruff check $(SRC)
-	flake8 $(SRC)
-	mypy $(SRC) \
+	uv run flake8 $(SRC)
+	uv run mypy $(SRC) \
 		--warn-return-any \
 		--warn-unused-ignores \
 		--ignore-missing-imports \
@@ -37,14 +40,17 @@ lint: $(SYNC)
 
 lint-strict: $(SYNC)
 	ruff check $(SRC)
-	flake8 $(SRC)
-	mypy $(SRC) --strict
+	uv run flake8 $(SRC)
+	uv run mypy $(SRC) --strict
 
 format:
 	ruff format $(SRC)
 
 analyze:
 	$(PYTHON) ./maze_analyzer.py maze.txt
+
+test: $(SYNC)
+	uv run pytest
 	
 
 .PHONY: install run debug clean lint lint-strict format analyze
