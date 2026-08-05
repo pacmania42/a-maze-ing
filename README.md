@@ -71,32 +71,12 @@ following keys.
 | OUTPUT_FILE | string| file to save the solution | Writable file |
 | PERFECT | boolean   | whether to create a *perfect maze*   | None |
 
-## Collaboration workflow
-Working in a team, we followed the following workflow:
-- Take a task from any open issues (assign to oneself)
-- Move the task to 'In progress'.
-- Create a branch (preferably from the issue page).
-- Fetch and checkout to that branch on your local.
-- Commit (several) and push.
-- Create test cases.
-- Update the readme.
-- Test (make test) & check linting (make lint-strict).
-- Create a PR.
-- Set the task done after the PR is merged
 
-#### Reviewer's role
-- Review
-- Merge (using `squash and merge`)
-
-### Git hooks
-To make sure we push clean code, we tapped into the commit hook (pre-commit) and we made it run the following things:
-- Format the code
-- Check lint
+## CI and GitHub configuration
+Since githooks can be bypassed, in order to ensure best practices are followed and clean code is pushed, the project utilizes GitHub ci workflow to:
+- Check linting
 - Check tests
 
-the hooks sit at .githooks/
-
-Failure at any point prevents the commit.
-This can be bypassed by doing `git commit --no-verify` when necessary.
+Additionally, to ensure one style is followed and facilitate communication, the project uses templates for PRs, issues and bug issues.
 
 ## Resources
