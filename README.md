@@ -71,4 +71,12 @@ following keys.
 | OUTPUT_FILE | string| file to save the solution | Writable file |
 | PERFECT | boolean   | whether to create a *perfect maze*   | None |
 
+
+## CI and GitHub configuration
+Since githooks can be bypassed, in order to ensure best practices are followed and clean code is pushed, the project utilizes GitHub ci workflow to:
+- Check linting
+- Check tests
+
+Additionally, to ensure one style is followed and facilitate communication, the project uses templates for PRs, issues and bug issues.
+
 ## Resources
