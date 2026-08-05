@@ -71,4 +71,27 @@ following keys.
 | OUTPUT_FILE | string| file to save the solution | Writable file |
 | PERFECT | boolean   | whether to create a *perfect maze*   | None |
 
+## Collaboration workflow
+Working in a team, we followed the following workflow:
+- Take a task from any open issues (assign to oneself)
+- Move the task to 'In progress'.
+- Create a branch (preferably from the issue page).
+- Fetch and checkout to that branch on your local.
+- Commit (several) and push.
+- Create test cases.
+- Update the readme.
+- Test (make test) & check linting (make lint-strict).
+- Create a PR.
+
+### Git hooks
+To make sure we push clean code, we tapped into the commit hook (pre-commit) and we made it run the following things:
+- Format the code
+- Check lint
+- Check tests
+
+the hooks sit at .githooks/
+
+Failure at any point prevents the commit.
+This can be bypassed by doing `git commit --no-verify` when necessary.
+
 ## Resources
