@@ -82,6 +82,11 @@ Working in a team, we followed the following workflow:
 - Update the readme.
 - Test (make test) & check linting (make lint-strict).
 - Create a PR.
+- Set the task done after the PR is merged
+
+#### Reviewer's role
+- Review
+- Merge (using `squash and merge`)
 
 ### Git hooks
 To make sure we push clean code, we tapped into the commit hook (pre-commit) and we made it run the following things:
