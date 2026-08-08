@@ -71,6 +71,35 @@ following keys.
 | OUTPUT_FILE | string| file to save the solution | Writable file |
 | PERFECT | boolean   | whether to create a *perfect maze*   | None |
 
+## mazegenerator package
+To facilitate the development, the project has been devided into 2 big parts:
+- maze generation/solving
+- ui
+
+This approach allows ui to be developed and tested independently of the maze generation part.
+During the early stages of the development, we have used a temporary mazegenerator from pacman
+while own mazegenerator package was being developed. Hence, the mazegenerator package is API-compatible
+with 42's mazegenerator (from Pac-Man).
+
+mazegenerator exposes a `MazeGenerator` class with the following structure:
+```
+MazeGenerator(
+    size: tuple[int, int] = (15, 15),
+    perfect: bool = False,
+    entry_cell: tuple[int, int] = (0, 0),
+    exit_cell: tuple[int, int] = (-1, -1),
+    seed: int = 0
+) None
+
+  # fields
+  maze: list[list[int]]
+  shortest_path: str
+  
+  # methods
+  generate(self, seed: int = 0) -> None
+ 
+```
+
 ## Collaboration workflow
 Working in a team, we followed the following workflow:
 - Take a task from any open issues (assign to oneself)

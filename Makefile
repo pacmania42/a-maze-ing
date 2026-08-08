@@ -5,7 +5,8 @@ CONFIG := default_config.txt
 SRC = $(MAIN) \
 	./src/parser.py \
 	./src/models.py \
-	./tests/test_parser.py
+	./tests/test_parser.py \
+	./tests/test_mazegenerator.py
 
 MYPY_OPTIONS := --warn-return-any \
 	--warn-unused-ignores \
@@ -55,4 +56,4 @@ test: $(SYNC)
 	uv run pytest
 	
 
-.PHONY: install run debug clean lint lint-strict format analyze
+.PHONY: install run debug clean lint lint-strict format analyze test
