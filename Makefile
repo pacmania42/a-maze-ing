@@ -5,6 +5,7 @@ CONFIG := default_config.txt
 SRC = $(MAIN) \
 	./src/parser.py \
 	./src/models.py \
+	./src/ui.py \
 	./tests/test_parser.py \
 	./tests/test_mazegenerator.py
 

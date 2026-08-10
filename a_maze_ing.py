@@ -1,5 +1,6 @@
 from src.models import ParseError
 from src.parser import Parser
+from src.ui import UI
 
 
 class Cell:
@@ -35,14 +36,16 @@ class MazeGenerator:
 def main() -> None:
     try:
         parser = Parser()
-        config = parser.parse()
-        print(config)
+        _ = parser.parse()
     except ParseError as err:
         print(err)
 
     # maze = MazeGenerator(config.width, config.height)
     # maze.create_grid()
     # maze.export("maze.txt")
+
+    ui = UI()
+    ui.show()
 
 
 if __name__ == "__main__":
