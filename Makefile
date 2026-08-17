@@ -1,10 +1,14 @@
 PYTHON := uv run python
-MAIN := a_maze_ing.py
+MAIN := ./a_maze_ing.py
 CONFIG := default_config.txt
 
 SRC = $(MAIN) \
-	./src/parser.py \
+	./src/adapter.py \
+	./src/cell.py \
+	./src/__init__.py \
 	./src/models.py \
+	./src/parser.py \
+	./src/settings.py \
 	./src/ui.py \
 	./tests/test_parser.py \
 	./tests/test_mazegenerator.py
@@ -28,7 +32,7 @@ $(SYNC): pyproject.toml
 	@touch $(SYNC)
 	
 debug: $(SYNC)
-	$(PYTHON) -n pdb $(MAIN) $(CONFIG)
+	$(PYTHON) -m pdb $(MAIN) $(CONFIG)
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -48,7 +52,7 @@ lint-strict: $(SYNC)
 	uv run mypy $(SRC) --strict
 
 format:
-	ruff format $(SRC)
+	ruff check --fix $(SRC)
 
 analyze:
 	$(PYTHON) ./maze_analyzer.py maze.txt
