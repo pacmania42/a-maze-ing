@@ -1,7 +1,5 @@
 from typing import Any
 
-from mazegenerator import MazeGenerator
-
 from src.cell import Cell
 
 
@@ -17,8 +15,8 @@ class Adapter:
     rows: int
     columns: int
 
-    def __init__(self, generator: MazeGenerator) -> None:
-        res = self._read_output("output_maze.txt")
+    def __init__(self, output_file: str) -> None:
+        res = self._read_output(output_file)
         self.rows = len(res["grid"])
         self.columns = len(res["grid"][0])
         self.grid = Adapter._create_grid(res["grid"])

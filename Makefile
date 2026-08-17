@@ -1,6 +1,7 @@
 PYTHON := uv run python
 MAIN := ./a_maze_ing.py
-CONFIG := default_config.txt
+CONFIG := ./default_config.txt
+OUTPUT := ./output_maze.txt
 
 SRC = $(MAIN) \
 	./src/adapter.py \
@@ -23,6 +24,9 @@ SYNC := .synced
 
 run: install
 	$(PYTHON) $(MAIN) $(CONFIG)
+
+vis: install
+	$(PYTHON) $(MAIN) $(OUTPUT) -v
 
 install: $(SYNC)
 
