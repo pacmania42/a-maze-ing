@@ -6,8 +6,7 @@ package. Provides the Parser class that reads, validates, and normalizes
 configuration data into a validated model.
 """
 
-from argparse import ArgumentParser
-from pathlib import Path
+from argparse import ArgumentParser, Namespace
 from typing import Any
 
 from pydantic import ValidationError
@@ -16,6 +15,7 @@ from src.models import ConfigData, ParseError
 
 
 class Parser:
+    default_output: str = "output_maze.txt"
     """
     Parser for loading and validating maze configuration files.
 
@@ -26,10 +26,39 @@ class Parser:
         model object.
     """
 
-    def parse(self) -> ConfigData:
+    def parse_args(self) -> Namespace:
         """
-        Parse the command-line argument to get the config file, read it,
-        normalize the data, and return the validated config.
+        Parse the command-line argument to obtain the target file path.
+
+        Returns
+        -------
+        Path
+          : dictionary-like object containing values for `file` and `visualize`
+        """
+        parser = ArgumentParser(
+            prog="uv run python a_maze_ing.py",
+            description="A maze generation and solving package & program.",
+        )
+
+        # Require config file as positional argument
+        parser.add_argument("file")
+
+        # visualize-only mode
+        parser.add_argument(
+            "-v",
+            "--visualize",
+            action="store_true",
+            help="Visulize only, config_file will be treated as output file",
+        )
+
+        return parser.parse_args()
+
+    def parse_config_file(self, config_file: str) -> ConfigData:
+        """
+        Parses the config file.
+
+        Parameters:
+          config_file: configuration file location.
 
         Returns
         -------
@@ -42,7 +71,6 @@ class Parser:
             If the file is not accessible or values are not valid per the
             ConfigData model.
         """
-        config_file = self._parse_args()
         data = self._parse_lines(config_file)
         normalized_data = self._normalize(data)
         try:
@@ -50,27 +78,7 @@ class Parser:
         except ValidationError as e:
             raise ParseError(f"Parser Error: {e.errors()}") from e
 
-    def _parse_args(self) -> Path:
-        """
-        Parse the command-line argument to obtain the config file path.
-
-        Returns
-        -------
-        Path
-            Path object pointing to the specified configuration file.
-        """
-        parser = ArgumentParser(
-            prog="python a_maze_ing.py",
-            description="A maze generation and solving package & program.",
-        )
-
-        # Require config file as positional argument
-        parser.add_argument("config_file")
-
-        # Return Path object of the provided config file
-        return Path(parser.parse_args().config_file)
-
-    def _parse_lines(self, config_file: Path) -> dict[str, str]:
+    def _parse_lines(self, config_file: str) -> dict[str, str]:
         """
         Parse config file lines into a dictionary.
 

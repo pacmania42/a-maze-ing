@@ -7,3 +7,5 @@ maze.txt
 .DS_Store
 resources
 .envrc
+maze_analyzer.py
+output_maze.txt

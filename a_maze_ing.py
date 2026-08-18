@@ -1,50 +1,46 @@
+import sys
+
+from mazegenerator import MazeGenerator
+
+from src.adapter import Adapter, AdapterError
 from src.models import ParseError
 from src.parser import Parser
 from src.ui import UI
 
 
-class Cell:
-    def __init__(self) -> None:
-        self.walls = 0b1111
-        self.visited = False
-
-
-class MazeGenerator:
-    def __init__(self, width: int, height: int) -> None:
-        self.width = width
-        self.height = height
-        self.grid: list[list[Cell]] = []
-
-    def create_grid(self) -> None:
-        for _ in range(self.height):
-            row: list[Cell] = []
-
-            for _ in range(self.width):
-                row.append(Cell())
-
-            self.grid.append(row)
-
-    def export(self, filename: str) -> None:
-        with open(filename, "w") as file:
-            for row in self.grid:
-                for cell in row:
-                    file.write(f"{cell.walls:X}")
-
-                file.write("\n")
-
-
 def main() -> None:
+    parser = Parser()
+    res = parser.parse_args()
+
+    if not res.visualize:  # generate + visualize
+        try:
+            cfg = parser.parse_config_file(res.file)
+        except ParseError as err:
+            print(err)
+            sys.exit(1)
+        try:
+            # generate a maze
+            gen = MazeGenerator(
+                (cfg.height, cfg.width),
+                cfg.perfect,
+                cfg.entry,
+                cfg.exit,
+            )
+            gen.generate()
+            # gen.export(Settings.output_file)
+        except Exception as e:  # TODO: change to appropriate exception class.
+            print(f"Generation error. {e}")
+            sys.exit(2)
+    else:  # visualize-only
+        output_file = res.file
+
     try:
-        parser = Parser()
-        _ = parser.parse()
-    except ParseError as err:
-        print(err)
+        adapter = Adapter(output_file)
+    except AdapterError as e:
+        print(e)
+        return
 
-    # maze = MazeGenerator(config.width, config.height)
-    # maze.create_grid()
-    # maze.export("maze.txt")
-
-    ui = UI()
+    ui = UI(adapter)
     ui.show()
 
 

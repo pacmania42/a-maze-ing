@@ -27,7 +27,7 @@ def run_parser_with_file(config_path: str) -> ConfigData:
     """
     parser = Parser()
     with mock.patch.object(sys, "argv", ["prog", config_path]):
-        return parser.parse()
+        return parser.parse_config_file(config_path)
 
 
 def test_valid_config(tmp_path: Path) -> None:

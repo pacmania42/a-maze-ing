@@ -25,13 +25,17 @@ project such as to install, run, format, lint and test.
 
 ### Running the application
 ````
-  make run
+  make # or
+  make run # or
+  uv run python a_maze_ing.py config_file.txt
 ````
-or simply,
 
+### Running the application on visualize-only mode
+The application can also be used to visaulize an already-generated maze by setting the `-v` switch in which case, the mandatory file will be treated as a generated maze data.
 ````
-  make run
+  uv run python a_maze_ing.py output_maze.txt -v
 ````
+
 
 ### Formating the source files
 ````
@@ -129,3 +133,5 @@ Failure at any point prevents the commit.
 This can be bypassed by doing `git commit --no-verify` when necessary.
 
 ## Resources
+[Harm Smits's 42 Docs](https://harm-smits.github.io/42docs/libs/minilibx.html) \
+[Keuhdall's mlx performance optimization guide/repo](https://github.com/keuhdall/images_example)
