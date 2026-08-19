@@ -1,21 +1,11 @@
-WHITE = 0xFFFFFF
-BLACK = 0x000000
-RED = 0xFF0000
-GREEN = 0x00FF00
-BLUE = 0x0000FF
-
-
 class Settings:
-    # sizes
-    cell_size: int = 100
+    cell_size: int = 50
     wall_size: int = cell_size // 10
 
-    # default colors
-    wall_color: int = BLUE
-    path_color: int = GREEN
-
-    # secondary colors
-    sec_wall_color: int = RED
-    sec_path_color: int = WHITE
+    off_color: int = 0x000000  # black
+    wall_color: int = 0x0000FF  # blue
+    path_color: int = 0x00FF00  # green
+    entry_color: int = 0xEAF6AD  # light shade of green
+    exit_color: int = 0xB6DB00  # dark shade of green
 
     window_title: str = "a-maze-ing"
