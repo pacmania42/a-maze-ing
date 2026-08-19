@@ -76,19 +76,19 @@ class Adapter:
     ) -> list[Cell]:
         shortest_path: list[Cell] = []
         x, y = entry
-        grid[x][y].path = True
-        shortest_path.append(grid[x][y])
+        grid[y][x].path = True
+        shortest_path.append(grid[y][x])
 
         for dirr in path:
             if dirr == "N":
-                x -= 1
-            elif dirr == "S":
-                x += 1
-            elif dirr == "E":
-                y += 1
-            elif dirr == "W":
                 y -= 1
+            elif dirr == "S":
+                y += 1
+            elif dirr == "E":
+                x += 1
+            elif dirr == "W":
+                x -= 1
 
-            grid[x][y].path = True
-            shortest_path.append(grid[x][y])
+            grid[y][x].path = True
+            shortest_path.append(grid[y][x])
         return shortest_path

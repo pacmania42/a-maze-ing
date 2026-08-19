@@ -6,9 +6,6 @@ BLUE = 0x0000FF
 
 
 class Settings:
-    # output file
-    output_file: str = "output_maze.txt"
-
     # sizes
     cell_size: int = 100
     wall_size: int = cell_size // 10

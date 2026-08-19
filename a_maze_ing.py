@@ -1,6 +1,6 @@
 import sys
 
-from mazegenerator import MazeGenerator
+from mazegen import MazeGenerator
 
 from src.adapter import Adapter, AdapterError
 from src.models import ParseError
@@ -19,15 +19,16 @@ def main() -> None:
             print(err)
             sys.exit(1)
         try:
-            # generate a maze
             gen = MazeGenerator(
-                (cfg.height, cfg.width),
-                cfg.perfect,
-                cfg.entry,
-                cfg.exit,
+                size=(cfg.width, cfg.height),
+                entry=cfg.entry,
+                exit=cfg.exit,
+                output_file=cfg.output_file.name,
+                perfect=cfg.perfect,
+                seed=cfg.seed,
             )
-            gen.generate()
-            # gen.export(Settings.output_file)
+            gen.export()
+            output_file = cfg.output_file.name
         except Exception as e:  # TODO: change to appropriate exception class.
             print(f"Generation error. {e}")
             sys.exit(2)
