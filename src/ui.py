@@ -23,7 +23,7 @@ class UI:
         self.adapter = adapter
         rows, columns = len(self.adapter.grid), len(self.adapter.grid[0])
 
-        self.show_terminals = False
+        self.show_path = False
         self.m = Mlx()
         self.mlx_ptr: int = self.m.mlx_init()
         self.width = columns * stg.cell_size
@@ -49,15 +49,21 @@ class UI:
         if keycode == 65307:  # escape
             self.m.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
             os._exit(0)
-        if keycode == 116:  # t
-            self.show_terminals = not self.show_terminals
-            self.paint_terminals()
+
+        if keycode == 0x70:  # p
+            self.show_path = not self.show_path
+            self.paint_path()
+
+        self.m.mlx_put_image_to_window(
+            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+        )
 
     def show(self) -> None:
         for row in self.adapter.grid:
             for cell in row:
                 cell.render(self.data_addr, self.ll, self.bpp)
 
+        self.paint_path()
         self.m.mlx_put_image_to_window(
             self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
         )
@@ -70,7 +76,7 @@ class UI:
             x = cell.row * stg.cell_size
             y = cell.col * stg.cell_size
 
-            if not self.show_terminals:
+            if not self.show_path:
                 color = stg.off_color
             else:
                 color = stg.entry_color if name == "entry" else stg.exit_color
@@ -85,6 +91,23 @@ class UI:
                 height=int(stg.cell_size - 2 * stg.wall_size),
                 color=color,
             )
-        self.m.mlx_put_image_to_window(
-            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-        )
+
+    def paint_path(self) -> None:
+        path = self.adapter.shortest_path[1:-1]
+
+        for cell in path:
+            x = cell.row * stg.cell_size
+            y = cell.col * stg.cell_size
+
+            color = stg.path_color if self.show_path else stg.off_color
+
+            Cell.put_box(
+                data_addr=self.data_addr,
+                line_len=self.ll,
+                bpp=self.bpp,
+                y=x + stg.wall_size,
+                x=y + stg.wall_size,
+                width=int(stg.cell_size - 2 * stg.wall_size),
+                height=int(stg.cell_size - 2 * stg.wall_size),
+                color=color,
+            )
