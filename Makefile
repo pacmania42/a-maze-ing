@@ -1,7 +1,7 @@
 PYTHON := uv run python
 MAIN := ./a_maze_ing.py
 CONFIG := ./default_config.txt
-OUTPUT := ./output_maze.txt
+OUTPUT := ./maze.txt
 
 SRC = $(MAIN) \
 	./src/adapter.py \

@@ -1,6 +1,6 @@
 import inspect
 
-from mazegenerator.mazegenerator import MazeGenerator
+from mazegen import MazeGenerator
 
 
 def test_mazegenerator_init_params() -> None:
@@ -8,9 +8,10 @@ def test_mazegenerator_init_params() -> None:
     assert list(sig.parameters) == [
         "self",
         "size",
+        "entry",
+        "exit",
+        "output_file",
         "perfect",
-        "entry_cell",
-        "exit_cell",
         "seed",
     ]
 
