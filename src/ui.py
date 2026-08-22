@@ -23,6 +23,8 @@ class MazeView:
         self.adapter = adapter
         rows, columns = len(self.adapter.grid), len(self.adapter.grid[0])
 
+        self.show_path: bool = True
+
         self.m = Mlx()
         self.mlx_ptr: int = self.m.mlx_init()
         self.maze_width = columns * stg.cell_size
@@ -48,13 +50,22 @@ class MazeView:
 
     def keybinding_dispatch(self, keycode: int, _: dict[str, Any]) -> None:
         if keycode == 0xFF1B:  # escape
+            self.m.mlx_destroy_image(self.mlx_ptr, self.img_addr)
             self.m.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
             os._exit(0)
-        if keycode == 0x6D:
+
+        if keycode == 0x6D:  # m
             self.adapter.generate()
             self.clear()
             self.render_maze()
             self.render_terminals()
+            self.render_path()
+            self.m.mlx_put_image_to_window(
+                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+            )
+
+        if keycode == 0x70:  # p
+            self.show_path = not self.show_path
             self.render_path()
             self.m.mlx_put_image_to_window(
                 self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
@@ -98,6 +109,7 @@ class MazeView:
             )
 
     def render_path(self) -> None:
+        color = stg.path_color if self.show_path else stg.off_color
         path = self.adapter.shortest_path[1:-1]
 
         for cell in path:
@@ -109,7 +121,7 @@ class MazeView:
                 x=y + stg.wall_size,
                 width=int(stg.cell_size - 2 * stg.wall_size),
                 height=int(stg.cell_size - 2 * stg.wall_size),
-                color=stg.path_color,
+                color=color,
             )
 
     def render_text(self) -> None:
@@ -134,6 +146,14 @@ class MazeView:
             self.win_ptr,
             stg.text_x_offset,
             self.maze_height + stg.text_y_offset + 2 * stg.text_line_inset,
+            stg.text_color,
+            "p | Show/Hide shortest path",
+        )
+        self.m.mlx_string_put(
+            self.mlx_ptr,
+            self.win_ptr,
+            stg.text_x_offset,
+            self.maze_height + stg.text_y_offset + 3 * stg.text_line_inset,
             stg.text_color,
             "ESC | Quit",
         )
