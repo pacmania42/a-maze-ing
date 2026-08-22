@@ -3,7 +3,7 @@ import sys
 from src.adapter import Adapter, AdapterError
 from src.models import ParseError
 from src.parser import Parser
-from src.ui import UI
+from src.ui import MazeView
 
 
 def main() -> None:
@@ -27,7 +27,7 @@ def main() -> None:
         print(e)
         return
 
-    ui = UI(adapter)
+    ui = MazeView(adapter)
     ui.show()
 
 

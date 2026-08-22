@@ -8,7 +8,7 @@ from src.cell import Cell
 from src.settings import Settings as stg
 
 
-class UI:
+class MazeView:
     grid: list[list[Cell]]
     m: Mlx
     mlx_ptr: int
@@ -16,8 +16,8 @@ class UI:
     data_addr: memoryview
     ll: int
     bpp: int
-    height: int
-    width: int
+    maze_height: int
+    maze_width: int
 
     def __init__(self, adapter: Adapter) -> None:
         self.adapter = adapter
@@ -25,17 +25,19 @@ class UI:
 
         self.m = Mlx()
         self.mlx_ptr: int = self.m.mlx_init()
-        self.width = columns * stg.cell_size
-        self.height = rows * stg.cell_size
+        self.maze_width = columns * stg.cell_size
+        self.maze_height = rows * stg.cell_size
+        self.view_height = self.maze_height + stg.footer_height
+        self.view_width = self.maze_width
 
         self.win_ptr: int = self.m.mlx_new_window(
             self.mlx_ptr,
-            self.width,
-            self.height,
+            self.view_width,
+            self.view_height,
             stg.window_title,
         )
         self.img_addr = self.m.mlx_new_image(
-            self.mlx_ptr, self.width, self.height
+            self.mlx_ptr, self.maze_width, self.maze_height
         )
         data_addr, bpp, ll, _ = self.m.mlx_get_data_addr(self.img_addr)
         self.data_addr = data_addr
@@ -45,7 +47,7 @@ class UI:
         self.m.mlx_key_hook(self.win_ptr, self.keybinding_dispatch, {})
 
     def keybinding_dispatch(self, keycode: int, _: dict[str, Any]) -> None:
-        if keycode == 65307:  # escape
+        if keycode == 0xFF1B:  # escape
             self.m.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
             os._exit(0)
         if keycode == 0x6D:
@@ -62,12 +64,13 @@ class UI:
         self._put_box(
             0,
             0,
-            self.width,
-            self.height,
+            self.maze_width,
+            self.maze_height,
             stg.off_color,
         )
 
     def show(self) -> None:
+        self.render_text()
         self.render_maze()
         self.render_terminals()
         self.render_path()
@@ -108,6 +111,32 @@ class UI:
                 height=int(stg.cell_size - 2 * stg.wall_size),
                 color=stg.path_color,
             )
+
+    def render_text(self) -> None:
+        self.m.mlx_string_put(
+            self.mlx_ptr,
+            self.win_ptr,
+            stg.text_x_offset,
+            self.maze_height + stg.text_y_offset - 10,
+            stg.text_color,
+            "KEYBINDINGS",
+        )
+        self.m.mlx_string_put(
+            self.mlx_ptr,
+            self.win_ptr,
+            stg.text_x_offset,
+            self.maze_height + stg.text_y_offset + stg.text_line_inset,
+            stg.text_color,
+            "m | Regenerate maze",
+        )
+        self.m.mlx_string_put(
+            self.mlx_ptr,
+            self.win_ptr,
+            stg.text_x_offset,
+            self.maze_height + stg.text_y_offset + 2 * stg.text_line_inset,
+            stg.text_color,
+            "ESC | Quit",
+        )
 
     def _put_pixel(self, y: int, x: int, color: int) -> None:
         offset = (y * self.ll) + (x * (self.bpp // 8))
