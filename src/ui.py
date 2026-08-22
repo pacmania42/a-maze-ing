@@ -5,7 +5,7 @@ from mlx import Mlx
 
 from src.adapter import Adapter
 from src.cell import Cell
-from src.settings import Settings as stg
+from src.settings import Settings
 
 
 class MazeView:
@@ -21,22 +21,23 @@ class MazeView:
 
     def __init__(self, adapter: Adapter) -> None:
         self.adapter = adapter
-        rows, columns = len(self.adapter.grid), len(self.adapter.grid[0])
+        self.stg = Settings()
 
         self.show_path: bool = True
+        self.wall_color_idx = 0
+
+        self.maze_width = len(self.adapter.grid[0]) * self.stg.cell_size
+        self.maze_height = len(self.adapter.grid) * self.stg.cell_size
+        self.view_height = self.maze_height + self.stg.footer_height
+        self.view_width = self.maze_width
 
         self.m = Mlx()
         self.mlx_ptr: int = self.m.mlx_init()
-        self.maze_width = columns * stg.cell_size
-        self.maze_height = rows * stg.cell_size
-        self.view_height = self.maze_height + stg.footer_height
-        self.view_width = self.maze_width
-
         self.win_ptr: int = self.m.mlx_new_window(
             self.mlx_ptr,
             self.view_width,
             self.view_height,
-            stg.window_title,
+            self.stg.window_title,
         )
         self.img_addr = self.m.mlx_new_image(
             self.mlx_ptr, self.maze_width, self.maze_height
@@ -71,13 +72,22 @@ class MazeView:
                 self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
             )
 
+        if keycode == 0x77:  # w
+            self.wall_color_idx = (self.wall_color_idx + 1) % len(
+                self.stg.wall_colors
+            )
+            self.render_maze()
+            self.m.mlx_put_image_to_window(
+                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+            )
+
     def clear(self) -> None:
         self._put_box(
             0,
             0,
             self.maze_width,
             self.maze_height,
-            stg.off_color,
+            self.stg.off_color,
         )
 
     def show(self) -> None:
@@ -95,32 +105,36 @@ class MazeView:
         terminals = (self.adapter.entry, "entry"), (self.adapter.exit, "exit")
 
         for cell, name in terminals:
-            x = cell.row * stg.cell_size
-            y = cell.col * stg.cell_size
+            x = cell.row * self.stg.cell_size
+            y = cell.col * self.stg.cell_size
 
-            color = stg.entry_color if name == "entry" else stg.exit_color
+            color = (
+                self.stg.entry_color
+                if name == "entry"
+                else self.stg.exit_color
+            )
 
             self._put_box(
-                y=x + stg.wall_size,
-                x=y + stg.wall_size,
-                width=int(stg.cell_size - 2 * stg.wall_size),
-                height=int(stg.cell_size - 2 * stg.wall_size),
+                y=x + self.stg.wall_size,
+                x=y + self.stg.wall_size,
+                width=int(self.stg.cell_size - 2 * self.stg.wall_size),
+                height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=color,
             )
 
     def render_path(self) -> None:
-        color = stg.path_color if self.show_path else stg.off_color
+        color = self.stg.path_color if self.show_path else self.stg.off_color
         path = self.adapter.shortest_path[1:-1]
 
         for cell in path:
-            x = cell.row * stg.cell_size
-            y = cell.col * stg.cell_size
+            x = cell.row * self.stg.cell_size
+            y = cell.col * self.stg.cell_size
 
             self._put_box(
-                y=x + stg.wall_size,
-                x=y + stg.wall_size,
-                width=int(stg.cell_size - 2 * stg.wall_size),
-                height=int(stg.cell_size - 2 * stg.wall_size),
+                y=x + self.stg.wall_size,
+                x=y + self.stg.wall_size,
+                width=int(self.stg.cell_size - 2 * self.stg.wall_size),
+                height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=color,
             )
 
@@ -128,33 +142,39 @@ class MazeView:
         self.m.mlx_string_put(
             self.mlx_ptr,
             self.win_ptr,
-            stg.text_x_offset,
-            self.maze_height + stg.text_y_offset - 10,
-            stg.text_color,
+            self.stg.text_x_offset,
+            self.maze_height + self.stg.text_y_offset - 10,
+            self.stg.text_color,
             "KEYBINDINGS",
         )
         self.m.mlx_string_put(
             self.mlx_ptr,
             self.win_ptr,
-            stg.text_x_offset,
-            self.maze_height + stg.text_y_offset + stg.text_line_inset,
-            stg.text_color,
+            self.stg.text_x_offset,
+            self.maze_height
+            + self.stg.text_y_offset
+            + self.stg.text_line_inset,
+            self.stg.text_color,
             "m | Regenerate maze",
         )
         self.m.mlx_string_put(
             self.mlx_ptr,
             self.win_ptr,
-            stg.text_x_offset,
-            self.maze_height + stg.text_y_offset + 2 * stg.text_line_inset,
-            stg.text_color,
+            self.stg.text_x_offset,
+            self.maze_height
+            + self.stg.text_y_offset
+            + 2 * self.stg.text_line_inset,
+            self.stg.text_color,
             "p | Show/Hide shortest path",
         )
         self.m.mlx_string_put(
             self.mlx_ptr,
             self.win_ptr,
-            stg.text_x_offset,
-            self.maze_height + stg.text_y_offset + 3 * stg.text_line_inset,
-            stg.text_color,
+            self.stg.text_x_offset,
+            self.maze_height
+            + self.stg.text_y_offset
+            + 3 * self.stg.text_line_inset,
+            self.stg.text_color,
             "ESC | Quit",
         )
 
@@ -177,37 +197,37 @@ class MazeView:
     ) -> None:
         for row in self.adapter.grid:
             for cell in row:
-                y = cell.row * stg.cell_size
-                x = cell.col * stg.cell_size
+                y = cell.row * self.stg.cell_size
+                x = cell.col * self.stg.cell_size
 
                 # north
                 if cell.n:
                     self._put_box(
                         y=y,
                         x=x,
-                        width=stg.cell_size,
-                        height=stg.wall_size,
-                        color=stg.wall_color,
+                        width=self.stg.cell_size,
+                        height=self.stg.wall_size,
+                        color=self.stg.wall_colors[self.wall_color_idx],
                     )
 
                 # south
                 if cell.s:
                     self._put_box(
-                        y=y + stg.cell_size - stg.wall_size,
+                        y=y + self.stg.cell_size - self.stg.wall_size,
                         x=x,
-                        width=stg.cell_size,
-                        height=stg.wall_size,
-                        color=stg.wall_color,
+                        width=self.stg.cell_size,
+                        height=self.stg.wall_size,
+                        color=self.stg.wall_colors[self.wall_color_idx],
                     )
 
                 # east wall
                 if cell.e:
                     self._put_box(
                         y=y,
-                        x=x + stg.cell_size - stg.wall_size,
-                        width=stg.wall_size,
-                        height=stg.cell_size,
-                        color=stg.wall_color,
+                        x=x + self.stg.cell_size - self.stg.wall_size,
+                        width=self.stg.wall_size,
+                        height=self.stg.cell_size,
+                        color=self.stg.wall_colors[self.wall_color_idx],
                     )
 
                 # west
@@ -215,7 +235,7 @@ class MazeView:
                     self._put_box(
                         x=x,
                         y=y,
-                        width=stg.wall_size,
-                        height=stg.cell_size,
-                        color=stg.wall_color,
+                        width=self.stg.wall_size,
+                        height=self.stg.cell_size,
+                        color=self.stg.wall_colors[self.wall_color_idx],
                     )
