@@ -48,6 +48,24 @@ class UI:
         if keycode == 65307:  # escape
             self.m.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
             os._exit(0)
+        if keycode == 0x6D:
+            self.adapter.generate()
+            self.clear()
+            self.render_maze()
+            self.render_terminals()
+            self.render_path()
+            self.m.mlx_put_image_to_window(
+                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+            )
+
+    def clear(self) -> None:
+        self._put_box(
+            0,
+            0,
+            self.width,
+            self.height,
+            stg.off_color,
+        )
 
     def show(self) -> None:
         self.render_maze()

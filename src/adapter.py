@@ -1,6 +1,10 @@
+from random import randint
 from typing import Any
 
+from mazegenerator import MazeGenerator
+
 from src.cell import Cell
+from src.models import ConfigData
 
 
 class AdapterError(Exception):
@@ -12,13 +16,39 @@ class Adapter:
     entry: Cell
     exit: Cell
     shortest_path: list[Cell]
+    gen: MazeGenerator | None
+    output_file: str
 
-    def __init__(self, output_file: str) -> None:
-        res = self._read_output(output_file)
-        self.grid = self._create_grid(res["grid"])
-        self.entry = self.grid[res["entry"][1]][res["entry"][0]]
-        self.exit = self.grid[res["exit"][1]][res["exit"][0]]
-        self.shortest_path = self._get_shortest_path(res["path"])
+    def __init__(self, output_file: str, cfg: ConfigData | None) -> None:
+        self.gen = None
+        self.output_file = output_file
+        if cfg:
+            self.cfg = cfg
+            self.output_file = cfg.output_file.name
+            self.gen = MazeGenerator(
+                size=(cfg.width, cfg.height),
+                entry_cell=cfg.entry,
+                exit_cell=cfg.exit,
+                perfect=cfg.perfect,
+                seed=cfg.seed,
+            )
+
+    def generate(self) -> None:
+        if self.gen:
+            self.gen.generate(randint(-1000, 1000))
+            self.grid = self._create_grid(self.gen.maze)
+            self.entry = self.grid[self.cfg.entry[1]][self.cfg.entry[0]]
+            self.exit = self.grid[self.cfg.exit[1]][self.cfg.exit[0]]
+            if isinstance(self.gen.shortest_path, str):  # TODO: update the api
+                self.shortest_path = self._get_shortest_path(
+                    self.gen.shortest_path
+                )
+        else:
+            res = self._read_output(self.output_file)
+            self.grid = self._create_grid(res["grid"])
+            self.entry = self.grid[res["entry"][1]][res["entry"][0]]
+            self.exit = self.grid[res["exit"][1]][res["exit"][0]]
+            self.shortest_path = self._get_shortest_path(res["path"])
 
     def _read_output(self, output_file: str) -> dict[str, Any]:
         res: dict[str, Any] = {

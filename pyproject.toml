@@ -7,12 +7,12 @@ requires-python = ">=3.13"
 dependencies = [
     "pydantic>=2.13.4",
     "mlx",
-    "mazegen42"
+    "mazegenerator",
 ]
 
 [tool.uv.sources]
 mlx = { path = "wheels/mlx-2.2-py3-none-any.whl" }
-mazegen42 = { path = "wheels/mazegen42-0.1.0-py3-none-any.whl" }
+mazegenerator = { path = "wheels/mazegenerator-2.1.0-py3-none-any.whl" }
 
 [dependency-groups]
 dev = [
