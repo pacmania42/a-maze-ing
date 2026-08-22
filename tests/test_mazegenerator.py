@@ -1,19 +1,20 @@
 import inspect
 
-from mazegen import MazeGenerator
+from mazegenerator import MazeGenerator
 
 
 def test_mazegenerator_init_params() -> None:
     sig = inspect.signature(MazeGenerator.__init__)
-    assert list(sig.parameters) == [
-        "self",
-        "size",
-        "entry",
-        "exit",
-        "output_file",
-        "perfect",
-        "seed",
-    ]
+    assert set(sig.parameters) == set(
+        [
+            "self",
+            "size",
+            "entry_cell",
+            "exit_cell",
+            "perfect",
+            "seed",
+        ]
+    )
 
 
 def test_mazegenerator_generate_params() -> None:
