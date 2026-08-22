@@ -9,22 +9,16 @@ class AdapterError(Exception):
 
 class Adapter:
     grid: list[list[Cell]]
+    entry: Cell
+    exit: Cell
     shortest_path: list[Cell]
-    entry: tuple[int, int]
-    exit: tuple[int, int]
-    rows: int
-    columns: int
 
     def __init__(self, output_file: str) -> None:
         res = self._read_output(output_file)
-        self.rows = len(res["grid"])
-        self.columns = len(res["grid"][0])
-        self.grid = Adapter._create_grid(res["grid"])
-        self.entry = res["entry"]
-        self.exit = res["exit"]
-        self.shortest_path = Adapter._get_shortest_path(
-            self.grid, self.entry, self.exit, res["path"]
-        )
+        self.grid = self._create_grid(res["grid"])
+        self.entry = self.grid[res["entry"][1]][res["entry"][0]]
+        self.exit = self.grid[res["exit"][1]][res["exit"][0]]
+        self.shortest_path = self._get_shortest_path(res["path"])
 
     def _read_output(self, output_file: str) -> dict[str, Any]:
         res: dict[str, Any] = {
@@ -56,8 +50,7 @@ class Adapter:
 
         return res
 
-    @staticmethod
-    def _create_grid(maze: list[list[int]]) -> list[list[Cell]]:
+    def _create_grid(self, maze: list[list[int]]) -> list[list[Cell]]:
         grid: list[list[Cell]] = []
         for row in range(len(maze)):
             row_cells: list[Cell] = []
@@ -67,17 +60,10 @@ class Adapter:
             grid.append(row_cells)
         return grid
 
-    @staticmethod
-    def _get_shortest_path(
-        grid: list[list[Cell]],
-        entry: tuple[int, int],
-        exit: tuple[int, int],
-        path: str,
-    ) -> list[Cell]:
+    def _get_shortest_path(self, path: str) -> list[Cell]:
         shortest_path: list[Cell] = []
-        x, y = entry
-        grid[y][x].path = True
-        shortest_path.append(grid[y][x])
+        x, y = self.entry.row, self.entry.col
+        shortest_path.append(self.grid[y][x])
 
         for dirr in path:
             if dirr == "N":
@@ -89,6 +75,5 @@ class Adapter:
             elif dirr == "W":
                 x -= 1
 
-            grid[y][x].path = True
-            shortest_path.append(grid[y][x])
+            shortest_path.append(self.grid[y][x])
         return shortest_path

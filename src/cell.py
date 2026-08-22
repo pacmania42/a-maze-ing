@@ -61,8 +61,6 @@ class Cell:
         data_addr: memoryview,
         ll: int,
         bpp: int,
-        wall_color: int,
-        path_color: int,
     ) -> None:
         y = self.row * stg.cell_size
         x = self.col * stg.cell_size
@@ -76,7 +74,7 @@ class Cell:
             x=x,
             width=stg.cell_size,
             height=stg.wall_size,
-            color=wall_color,
+            color=stg.wall_color,
         )
 
         # south wall
@@ -88,7 +86,7 @@ class Cell:
             x=x,
             width=stg.cell_size,
             height=stg.wall_size,
-            color=wall_color,
+            color=stg.wall_color,
         )
 
         # east wall
@@ -100,7 +98,7 @@ class Cell:
             x=x + stg.cell_size - stg.wall_size,
             width=stg.wall_size,
             height=stg.cell_size,
-            color=wall_color,
+            color=stg.wall_color,
         )
 
         # west wall
@@ -112,17 +110,5 @@ class Cell:
             y=y,
             width=stg.wall_size,
             height=stg.cell_size,
-            color=wall_color,
-        )
-
-        # center
-        Cell.put_box(
-            data_addr=data_addr,
-            line_len=ll,
-            bpp=bpp,
-            y=y + stg.wall_size,
-            x=x + stg.wall_size,
-            width=int(stg.cell_size - 2 * stg.wall_size),
-            height=int(stg.cell_size - 2 * stg.wall_size),
-            color=path_color,
+            color=stg.wall_color,
         )

@@ -5,58 +5,86 @@ from mlx import Mlx
 
 from src.adapter import Adapter
 from src.cell import Cell
-from src.settings import Settings
+from src.settings import Settings as stg
 
 
 class UI:
     grid: list[list[Cell]]
-    settings: Settings
     m: Mlx
     mlx_ptr: int
     win_ptr: int
-    data_addr: int
+    data_addr: memoryview
+    ll: int
+    bpp: int
     height: int
     width: int
 
     def __init__(self, adapter: Adapter) -> None:
         self.adapter = adapter
+        rows, columns = len(self.adapter.grid), len(self.adapter.grid[0])
 
+        self.show_terminals = False
         self.m = Mlx()
         self.mlx_ptr: int = self.m.mlx_init()
-        self.width = adapter.columns * Settings.cell_size
-        self.height = adapter.rows * Settings.cell_size
+        self.width = columns * stg.cell_size
+        self.height = rows * stg.cell_size
 
         self.win_ptr: int = self.m.mlx_new_window(
             self.mlx_ptr,
             self.width,
             self.height,
-            Settings.window_title,
+            stg.window_title,
         )
+        self.img_addr = self.m.mlx_new_image(
+            self.mlx_ptr, self.width, self.height
+        )
+        data_addr, bpp, ll, _ = self.m.mlx_get_data_addr(self.img_addr)
+        self.data_addr = data_addr
+        self.bpp = bpp
+        self.ll = ll
 
         self.m.mlx_key_hook(self.win_ptr, self.keybinding_dispatch, {})
 
     def keybinding_dispatch(self, keycode: int, _: dict[str, Any]) -> None:
-        if keycode == 65307:
+        if keycode == 65307:  # escape
+            self.m.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
             os._exit(0)
+        if keycode == 116:  # t
+            self.show_terminals = not self.show_terminals
+            self.paint_terminals()
 
     def show(self) -> None:
-        img_addr = self.m.mlx_new_image(
-            self.mlx_ptr,
-            self.width,
-            self.height,
-        )
-        data_addr, bpp, ll, _ = self.m.mlx_get_data_addr(img_addr)
         for row in self.adapter.grid:
             for cell in row:
-                cell.render(
-                    data_addr,
-                    ll,
-                    bpp,
-                    Settings.wall_color,
-                    Settings.path_color,
-                )
+                cell.render(self.data_addr, self.ll, self.bpp)
 
         self.m.mlx_put_image_to_window(
-            self.mlx_ptr, self.win_ptr, img_addr, 0, 0
+            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
         )
         self.m.mlx_loop(self.mlx_ptr)
+
+    def paint_terminals(self) -> None:
+        terminals = (self.adapter.entry, "entry"), (self.adapter.exit, "exit")
+
+        for cell, name in terminals:
+            x = cell.row * stg.cell_size
+            y = cell.col * stg.cell_size
+
+            if not self.show_terminals:
+                color = stg.off_color
+            else:
+                color = stg.entry_color if name == "entry" else stg.exit_color
+
+            Cell.put_box(
+                data_addr=self.data_addr,
+                line_len=self.ll,
+                bpp=self.bpp,
+                y=x + stg.wall_size,
+                x=y + stg.wall_size,
+                width=int(stg.cell_size - 2 * stg.wall_size),
+                height=int(stg.cell_size - 2 * stg.wall_size),
+                color=color,
+            )
+        self.m.mlx_put_image_to_window(
+            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+        )
