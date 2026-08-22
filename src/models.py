@@ -66,7 +66,7 @@ class ConfigData(BaseModel):
     exit: tuple[int, int]
     output_file: Path
     perfect: bool = Field(default=False)
-    seed: Optional[int] = None
+    seed: int = 42
     algorithm: Optional[Literal["prim", "wilson"]] = None
 
     @field_validator("output_file")

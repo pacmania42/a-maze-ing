@@ -1,10 +1,62 @@
-from typing import Any
+from random import randint
+from typing import Protocol, runtime_checkable
+
+from mazegenerator import MazeGenerator
 
 from src.cell import Cell
+from src.models import ConfigData
 
 
 class AdapterError(Exception):
     pass
+
+
+@runtime_checkable
+class Generator(Protocol):
+    maze: list[list[int]]
+    maze_entry: tuple[int, int]
+    maze_exit: tuple[int, int]
+    shortest_path: str | bool
+
+    def generate(self, seed: int = 42) -> None: ...
+
+
+class MazeGeneratorFile:
+    maze: list[list[int]]
+    maze_entry: tuple[int, int]
+    maze_exit: tuple[int, int]
+    shortest_path: str | bool
+
+    def __init__(self, output_file: str):
+        self._output_file = output_file
+        self.maze: list[list[int]] = [[]]
+        self.maze_entry: tuple[int, int] = (0, 0)
+        self.maze_exit: tuple[int, int] = (0, 0)
+        self.shortest_path: str | bool = False
+
+        self.generate()
+
+    def generate(self, seed: int = 42) -> None:
+        self.maze.clear()
+        try:
+            with open(self._output_file) as output:
+                while not (line := output.readline()).isspace():
+                    self.maze.append(
+                        [int(item, base=16) for item in line[:-1]]
+                    )
+
+                x, y = output.readline()[:-1].split(",")
+                self.maze_entry = int(x), int(y)
+
+                x, y = output.readline()[:-1].split(",")
+                self.maze_exit = int(x), int(y)
+
+                self.shortest_path = output.readline()[:-1]
+
+        except OSError as e:
+            raise AdapterError("Error reading outputfile.") from e
+        except ValueError as e:
+            raise AdapterError("Invalid entries in the output file") from e
 
 
 class Adapter:
@@ -12,43 +64,32 @@ class Adapter:
     entry: Cell
     exit: Cell
     shortest_path: list[Cell]
+    gen: Generator
+    output_file: str
 
-    def __init__(self, output_file: str) -> None:
-        res = self._read_output(output_file)
-        self.grid = self._create_grid(res["grid"])
-        self.entry = self.grid[res["entry"][1]][res["entry"][0]]
-        self.exit = self.grid[res["exit"][1]][res["exit"][0]]
-        self.shortest_path = self._get_shortest_path(res["path"])
+    def __init__(self, output_file: str, cfg: ConfigData | None) -> None:
+        if cfg:
+            self.cfg = cfg
+            self.output_file = cfg.output_file.name
+            self.gen = MazeGenerator(
+                size=(cfg.width, cfg.height),
+                entry_cell=cfg.entry,
+                exit_cell=cfg.exit,
+                perfect=cfg.perfect,
+                seed=cfg.seed,
+            )
+        else:
+            self.gen = MazeGeneratorFile(output_file)
 
-    def _read_output(self, output_file: str) -> dict[str, Any]:
-        res: dict[str, Any] = {
-            "grid": [],
-            "entry": (),
-            "exit": (),
-            "path": [],
-        }
-
-        try:
-            with open(output_file) as output:
-                while not (line := output.readline()).isspace():
-                    res["grid"].append(
-                        [int(item, base=16) for item in line[:-1]]
-                    )
-
-                x, y = output.readline()[:-1].split(",")
-                res["entry"] = int(x), int(y)
-
-                x, y = output.readline()[:-1].split(",")
-                res["exit"] = int(x), int(y)
-
-                res["path"] = output.readline()[:-1]
-
-        except OSError as e:
-            raise AdapterError("Error reading outputfile.") from e
-        except ValueError as e:
-            raise AdapterError("Invalid entries in the output file") from e
-
-        return res
+    def generate(self) -> None:
+        self.gen.generate(randint(-1000, 1000))
+        self.grid = self._create_grid(self.gen.maze)
+        self.entry = self.grid[self.gen.maze_entry[1]][self.gen.maze_entry[0]]
+        self.exit = self.grid[self.gen.maze_exit[1]][self.gen.maze_exit[0]]
+        if isinstance(self.gen.shortest_path, str):  # TODO: update the api
+            self.shortest_path = self._get_shortest_path(
+                self.gen.shortest_path
+            )
 
     def _create_grid(self, maze: list[list[int]]) -> list[list[Cell]]:
         grid: list[list[Cell]] = []
