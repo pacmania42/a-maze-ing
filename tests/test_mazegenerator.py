@@ -1,6 +1,6 @@
 import inspect
 
-from mazegenerator import MazeGenerator
+from mazegen import MazeGenerator
 
 
 def test_mazegenerator_init_params() -> None:
@@ -13,6 +13,7 @@ def test_mazegenerator_init_params() -> None:
             "exit_cell",
             "perfect",
             "seed",
+            "pattern",
         ]
     )
 

@@ -19,9 +19,12 @@ class MazeView:
     maze_height: int
     maze_width: int
 
-    def __init__(self, adapter: Adapter) -> None:
+    def __init__(
+        self, adapter: Adapter, visualize_only: bool, stg: Settings
+    ) -> None:
         self.adapter = adapter
-        self.stg = Settings()
+        self.visualize_only = visualize_only
+        self.stg = stg
 
         self.show_path: bool = True
         self.wall_color_idx = 0
@@ -95,6 +98,8 @@ class MazeView:
         self.render_maze()
         self.render_terminals()
         self.render_path()
+        if not self.visualize_only:
+            self.render_pattern()
 
         self.m.mlx_put_image_to_window(
             self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
@@ -105,8 +110,8 @@ class MazeView:
         terminals = (self.adapter.entry, "entry"), (self.adapter.exit, "exit")
 
         for cell, name in terminals:
-            x = cell.row * self.stg.cell_size
-            y = cell.col * self.stg.cell_size
+            x = cell.col * self.stg.cell_size
+            y = cell.row * self.stg.cell_size
 
             color = (
                 self.stg.entry_color
@@ -115,8 +120,8 @@ class MazeView:
             )
 
             self._put_box(
-                y=x + self.stg.wall_size,
-                x=y + self.stg.wall_size,
+                y=y + self.stg.wall_size,
+                x=x + self.stg.wall_size,
                 width=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=color,
@@ -127,15 +132,33 @@ class MazeView:
         path = self.adapter.shortest_path[1:-1]
 
         for cell in path:
-            x = cell.row * self.stg.cell_size
-            y = cell.col * self.stg.cell_size
+            x = cell.col * self.stg.cell_size
+            y = cell.row * self.stg.cell_size
 
             self._put_box(
-                y=x + self.stg.wall_size,
-                x=y + self.stg.wall_size,
+                y=y + self.stg.wall_size + self.stg.wall_size,
+                x=x + self.stg.wall_size + self.stg.wall_size,
+                width=int(self.stg.cell_size - 6 * self.stg.wall_size),
+                height=int(self.stg.cell_size - 6 * self.stg.wall_size),
+                color=color,
+            )
+
+    def render_pattern(self) -> None:
+        pattern = self.adapter.pattern
+
+        if not pattern:
+            return
+
+        for col, row in pattern:
+            x = col * self.stg.cell_size
+            y = row * self.stg.cell_size
+
+            self._put_box(
+                y=y + self.stg.wall_size,
+                x=x + self.stg.wall_size,
                 width=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
-                color=color,
+                color=self.stg.pattern_color,
             )
 
     def render_text(self) -> None:

@@ -10,7 +10,7 @@ SRC = $(MAIN) \
 	./src/models.py \
 	./src/parser.py \
 	./src/settings.py \
-	./src/ui.py \
+	./src/maze_view.py \
 	./tests/test_parser.py \
 	./tests/test_mazegenerator.py
 

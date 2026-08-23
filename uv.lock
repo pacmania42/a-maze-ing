@@ -11,7 +11,7 @@ name = "a-maze-ing"
 version = "0.2.2"
 source = { virtual = "." }
 dependencies = [
-    { name = "mazegenerator" },
+    { name = "mazegen42" },
     { name = "mlx" },
     { name = "pydantic" },
 ]
@@ -25,7 +25,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mazegenerator", path = "wheels/mazegenerator-2.1.0-py3-none-any.whl" },
+    { name = "mazegen42", specifier = ">=0.1.2" },
     { name = "mlx", path = "wheels/mlx-2.2-py3-none-any.whl" },
     { name = "pydantic", specifier = ">=2.13.4" },
 ]
@@ -229,11 +229,12 @@ wheels = [
 ]
 
 [[package]]
-name = "mazegenerator"
-version = "2.1.0"
-source = { path = "wheels/mazegenerator-2.1.0-py3-none-any.whl" }
+name = "mazegen42"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/b4/302961b6047f1c8fc28ff7b58c786c30b13eb12a60d79bfa9237582436bc/mazegen42-0.1.2.tar.gz", hash = "sha256:45b8d8d4e3ca8134a370f5586e1499d5af87aefa2f38538b593b7325dccc8853", size = 4199, upload-time = "2026-08-23T20:34:52.489Z" }
 wheels = [
-    { filename = "mazegenerator-2.1.0-py3-none-any.whl", hash = "sha256:98e12f7e989cef03dd4411657d7bee12653804aee87a568eddfaf21436ffd4aa" },
+    { url = "https://files.pythonhosted.org/packages/98/1c/6a78b14729bbaaca368f226545e59690ed0add89fd5dc1d30530f589539f/mazegen42-0.1.2-py3-none-any.whl", hash = "sha256:2daaa7bec51567b8ecb4cad3951341af32afd047e2dfc833ac9ac0fc475f436a", size = 3989, upload-time = "2026-08-23T20:34:51.676Z" },
 ]
 
 [[package]]
