@@ -1,10 +1,11 @@
 from random import randint
 from typing import Protocol, runtime_checkable
 
-from mazegenerator import MazeGenerator
+from mazegen import MazeGenerator
 
 from src.cell import Cell
 from src.models import ConfigData
+from src.settings import Settings
 
 
 class AdapterError(Exception):
@@ -16,23 +17,20 @@ class Generator(Protocol):
     maze: list[list[int]]
     maze_entry: tuple[int, int]
     maze_exit: tuple[int, int]
-    shortest_path: str | bool
+    shortest_path: str
+    pattern: list[tuple[int, int]] | None
 
     def generate(self, seed: int = 42) -> None: ...
 
 
 class MazeGeneratorFile:
-    maze: list[list[int]]
-    maze_entry: tuple[int, int]
-    maze_exit: tuple[int, int]
-    shortest_path: str | bool
-
     def __init__(self, output_file: str):
         self._output_file = output_file
         self.maze: list[list[int]] = [[]]
         self.maze_entry: tuple[int, int] = (0, 0)
         self.maze_exit: tuple[int, int] = (0, 0)
-        self.shortest_path: str | bool = False
+        self.shortest_path: str = ""
+        self.pattern: list[tuple[int, int]] | None = None
 
         self.generate()
 
@@ -66,10 +64,13 @@ class Adapter:
     shortest_path: list[Cell]
     gen: Generator
     output_file: str
+    pattern: list[tuple[int, int]] | None
 
-    def __init__(self, output_file: str, cfg: ConfigData | None) -> None:
+    def __init__(
+        self, output_file: str, cfg: ConfigData | None, stg: Settings
+    ) -> None:
         if cfg:
-            self.cfg = cfg
+            self.cfg: ConfigData = cfg
             self.output_file = cfg.output_file.name
             self.gen = MazeGenerator(
                 size=(cfg.width, cfg.height),
@@ -77,6 +78,7 @@ class Adapter:
                 exit_cell=cfg.exit,
                 perfect=cfg.perfect,
                 seed=cfg.seed,
+                pattern=stg.pattern,
             )
         else:
             self.gen = MazeGeneratorFile(output_file)
@@ -86,6 +88,7 @@ class Adapter:
         self.grid = self._create_grid(self.gen.maze)
         self.entry = self.grid[self.gen.maze_entry[1]][self.gen.maze_entry[0]]
         self.exit = self.grid[self.gen.maze_exit[1]][self.gen.maze_exit[0]]
+        self.pattern = self.gen.pattern
         if isinstance(self.gen.shortest_path, str):  # TODO: update the api
             self.shortest_path = self._get_shortest_path(
                 self.gen.shortest_path

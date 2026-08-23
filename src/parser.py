@@ -46,7 +46,7 @@ class Parser:
         # visualize-only mode
         parser.add_argument(
             "-v",
-            "--visualize",
+            "--visualize-only",
             action="store_true",
             help="Visulize only, config_file will be treated as output file",
         )
