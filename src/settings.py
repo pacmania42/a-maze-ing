@@ -2,7 +2,7 @@ class Settings:
     cell_size = 50
     wall_size = cell_size // 10
 
-    footer_height = 120
+    footer_height = 160
     text_x_offset = 30
     text_y_offset = 30
     text_line_inset = 25
