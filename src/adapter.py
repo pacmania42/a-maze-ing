@@ -34,7 +34,7 @@ class MazeGeneratorFile:
 
         self.generate()
 
-    def generate(self, seed: int = 42) -> None:
+    def generate(self, seed: int | None = None) -> None:
         self.maze.clear()
         try:
             with open(self._output_file) as output:

@@ -136,10 +136,10 @@ class MazeView:
             y = cell.row * self.stg.cell_size
 
             self._put_box(
-                y=y + self.stg.wall_size,
-                x=x + self.stg.wall_size,
-                width=int(self.stg.cell_size - 2 * self.stg.wall_size),
-                height=int(self.stg.cell_size - 2 * self.stg.wall_size),
+                y=y + self.stg.wall_size + self.stg.wall_size,
+                x=x + self.stg.wall_size + self.stg.wall_size,
+                width=int(self.stg.cell_size - 6 * self.stg.wall_size),
+                height=int(self.stg.cell_size - 6 * self.stg.wall_size),
                 color=color,
             )
 
