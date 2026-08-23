@@ -175,6 +175,16 @@ class MazeView:
             + self.stg.text_y_offset
             + 3 * self.stg.text_line_inset,
             self.stg.text_color,
+            "w | Change wall color",
+        )
+        self.m.mlx_string_put(
+            self.mlx_ptr,
+            self.win_ptr,
+            self.stg.text_x_offset,
+            self.maze_height
+            + self.stg.text_y_offset
+            + 4 * self.stg.text_line_inset,
+            self.stg.text_color,
             "ESC | Quit",
         )
 
