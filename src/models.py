@@ -12,7 +12,7 @@ Contains:
 
 import os
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import (
     BaseModel,
@@ -65,9 +65,9 @@ class ConfigData(BaseModel):
     entry: tuple[int, int]
     exit: tuple[int, int]
     output_file: Path
-    perfect: bool = Field(default=False)
+    perfect: bool = False
     seed: int = 42
-    algorithm: Optional[Literal["prim", "wilson"]] = None
+    algorithm: Literal["IB", "wilson"] = "wilson"
 
     @field_validator("output_file")
     @classmethod

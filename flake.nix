@@ -2,7 +2,7 @@
   description = "Nix flake for a-maze-ing";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
   };
 
   outputs =
@@ -16,14 +16,14 @@
         default =
           let
             x11Libs = with pkgs; [
-              libX11
-              libXrandr
-              libXrender
-              libXext
-              libXcursor
-              libXinerama
-              libXi
-              libXxf86vm
+              libx11
+              libxrandr
+              libxrender
+              libxext
+              libxcursor
+              libxinerama
+              libxi
+              libxxf86vm
               libxcb
               libxcb-keysyms
             ];
@@ -45,22 +45,24 @@
             ];
           in
           pkgs.mkShellNoCC {
-            packages = [
-              pkgs.python313
-              pkgs.uv
-              pkgs.ruff
-            ]
-            ++ glLibs
-            ++ x11Libs
-            ++ fontLibs
-            ++ zLibs
-            ++ bsdLibs;
+            packages =
+              with pkgs;
+              [
+                python310
+                uv
+                ruff
+              ]
+              ++ glLibs
+              ++ x11Libs
+              ++ fontLibs
+              ++ zLibs
+              ++ bsdLibs;
             env = {
               LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (
                 [ pkgs.stdenv.cc.cc.lib ] ++ glLibs ++ x11Libs ++ fontLibs ++ zLibs ++ bsdLibs
               );
               UV_PYTHON_DOWNLOADS = "never";
-              UV_PYTHON = "${pkgs.python313}/bin/python3.13";
+              UV_PYTHON = "${pkgs.python310}/bin/python3.10";
             };
           };
       });

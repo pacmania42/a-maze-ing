@@ -1,4 +1,5 @@
 import os
+from random import randint
 from typing import Any
 
 from mlx import Mlx
@@ -59,11 +60,12 @@ class MazeView:
             os._exit(0)
 
         if keycode == 0x6D:  # m
-            self.adapter.generate()
+            self.adapter.generate(seed=randint(-1000, 1000))
             self.clear()
             self.render_maze()
             self.render_terminals()
             self.render_path()
+            self.render_pattern()
             self.m.mlx_put_image_to_window(
                 self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
             )
@@ -136,10 +138,10 @@ class MazeView:
             y = cell.row * self.stg.cell_size
 
             self._put_box(
-                y=y + self.stg.wall_size + self.stg.wall_size,
-                x=x + self.stg.wall_size + self.stg.wall_size,
-                width=int(self.stg.cell_size - 6 * self.stg.wall_size),
-                height=int(self.stg.cell_size - 6 * self.stg.wall_size),
+                y=y + self.stg.wall_size,
+                x=x + self.stg.wall_size,
+                width=self.stg.cell_size - 2 * self.stg.wall_size,
+                height=self.stg.cell_size - 2 * self.stg.wall_size,
                 color=color,
             )
 
@@ -162,6 +164,9 @@ class MazeView:
             )
 
     def render_text(self) -> None:
+        algorithm = (
+            "N/A" if self.visualize_only else self.adapter.cfg.algorithm
+        )
         self.m.mlx_string_put(
             self.mlx_ptr,
             self.win_ptr,
@@ -169,6 +174,14 @@ class MazeView:
             self.maze_height + self.stg.text_y_offset - 10,
             self.stg.text_color,
             "KEYBINDINGS",
+        )
+        self.m.mlx_string_put(
+            self.mlx_ptr,
+            self.win_ptr,
+            self.maze_width - 8 * self.stg.text_x_offset,
+            self.maze_height + self.stg.text_y_offset - 10,
+            self.stg.text_color,
+            f"ALGORITHM: {algorithm}",
         )
         self.m.mlx_string_put(
             self.mlx_ptr,
