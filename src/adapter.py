@@ -1,4 +1,3 @@
-from random import randint
 from typing import Protocol, runtime_checkable
 
 from mazegen import MazeGenerator
@@ -20,7 +19,7 @@ class Generator(Protocol):
     shortest_path: str
     pattern: list[tuple[int, int]] | None
 
-    def generate(self, seed: int = 42) -> None: ...
+    def generate(self, seed: int | None = None) -> None: ...
 
 
 class MazeGeneratorFile:
@@ -65,12 +64,15 @@ class Adapter:
     gen: Generator
     output_file: str
     pattern: list[tuple[int, int]] | None
+    seed: int | None
 
     def __init__(
         self, output_file: str, cfg: ConfigData | None, stg: Settings
     ) -> None:
+        self.seed = None
         if cfg:
-            self.cfg: ConfigData = cfg
+            self.seed = cfg.seed
+            self.cfg = cfg
             self.output_file = cfg.output_file.name
             self.gen = MazeGenerator(
                 size=(cfg.width, cfg.height),
@@ -78,13 +80,15 @@ class Adapter:
                 exit_cell=cfg.exit,
                 perfect=cfg.perfect,
                 seed=cfg.seed,
+                algorithm=cfg.algorithm,
                 pattern=stg.pattern,
             )
         else:
             self.gen = MazeGeneratorFile(output_file)
 
-    def generate(self) -> None:
-        self.gen.generate(randint(-1000, 1000))
+    def generate(self, seed: int | None = None) -> None:
+        self.seed = self.cfg.seed if not seed else seed
+        self.gen.generate(self.seed)
         self.grid = self._create_grid(self.gen.maze)
         self.entry = self.grid[self.gen.maze_entry[1]][self.gen.maze_entry[0]]
         self.exit = self.grid[self.gen.maze_exit[1]][self.gen.maze_exit[0]]
