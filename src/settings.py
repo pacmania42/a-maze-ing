@@ -11,16 +11,17 @@ class Settings:
         self.wall_colors = [
             0x0000FF,
             0xDDDDDD,
-            0xFFFFFF,
             0x00FFFF,
         ]
 
         self.off_color = 0x000000  # black
         self.pattern_color = 0x800080  # purple
-        self.path_color = 0x00FF00  # green
-        self.entry_color = 0xEAF6AD  # light shade of green
-        self.exit_color = 0xB6DB00  # dark shade of green
+        self.path_color = 0xFFFF00  # green
+        self.entry_color = 0xFF0000  # red
+        self.exit_color = 0x00FF00  # green
         self.text_color = 0xFFFFFF  # white
+
+        self.animation_tick = 0.1
 
         self.window_title: str = "a-maze-ing"
 

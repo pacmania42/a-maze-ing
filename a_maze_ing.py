@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 from src.adapter import Adapter, AdapterError
 from src.maze_view import MazeView
@@ -9,22 +10,24 @@ from src.settings import Settings
 
 def main() -> None:
     parser = Parser()
-    stg = Settings()
     res = parser.parse_args()
 
-    cfg = None
-    output_file = res.file
-    if not res.visualize_only:  # generate + visualize
+    if not res.visualize_only:
         try:
             cfg = parser.parse_config_file(res.file)
             output_file = cfg.output_file.name
         except ParseError as err:
             print(err)
             sys.exit(1)
+    else:
+        cfg = None
+        output_file = res.file
 
     try:
+        stg = Settings()
         adapter = Adapter(output_file, cfg, stg)
         adapter.generate()
+        adapter.export(Path(output_file))
     except AdapterError as e:
         print(e)
         return
