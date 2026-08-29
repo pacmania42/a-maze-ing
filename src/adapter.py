@@ -185,7 +185,7 @@ class Adapter:
             list[Cell]: Result produced by `_get_shortest_path`.
         """
         shortest_path: list[Cell] = []
-        x, y = self.entry.row, self.entry.col
+        y, x = self.entry.row, self.entry.col
         shortest_path.append(self.grid[y][x])
 
         for dirr in path:

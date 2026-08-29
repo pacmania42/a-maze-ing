@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 
+from mazegen.generator import MazeGeneratorError
+
 from src.adapter import Adapter, AdapterError
 from src.maze_view import MazeView
 from src.models import ParseError
@@ -28,8 +30,9 @@ def main() -> None:
         stg = Settings()
         adapter = Adapter(output_file, cfg, stg)
         adapter.generate()
-        adapter.export(Path(output_file))
-    except AdapterError as e:
+        if cfg:
+            adapter.export(Path(cfg.output_file))
+    except (AdapterError, MazeGeneratorError) as e:
         print(e)
         return
 

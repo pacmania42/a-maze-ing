@@ -29,5 +29,5 @@ select = ["E", "F", "B", "I"]
 pythonpath = ["."]
 
 [[tool.mypy.overrides]]
-module = ["mazegen", "mlx"]
+module = ["mazegen", "mazegen.generator", "mlx"]
 ignore_missing_imports = true
