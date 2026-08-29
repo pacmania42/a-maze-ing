@@ -1,5 +1,6 @@
 import os
 from random import randint
+from time import sleep
 from typing import Any
 
 from mlx import Mlx
@@ -10,16 +11,6 @@ from src.settings import Settings
 
 
 class MazeView:
-    grid: list[list[Cell]]
-    m: Mlx
-    mlx_ptr: int
-    win_ptr: int
-    data_addr: memoryview
-    ll: int
-    bpp: int
-    maze_height: int
-    maze_width: int
-
     def __init__(
         self, adapter: Adapter, visualize_only: bool, stg: Settings
     ) -> None:
@@ -62,29 +53,24 @@ class MazeView:
         if keycode == 0x6D:  # m
             self.adapter.generate(seed=randint(-1000, 1000))
             self.clear()
-            self.render_maze()
+            self.render_grid()
+            self.render_pattern()
             self.render_terminals()
             self.render_path()
-            self.render_pattern()
-            self.m.mlx_put_image_to_window(
-                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-            )
 
         if keycode == 0x70:  # p
             self.show_path = not self.show_path
+            self.render_terminals()
             self.render_path()
-            self.m.mlx_put_image_to_window(
-                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-            )
 
         if keycode == 0x77:  # w
             self.wall_color_idx = (self.wall_color_idx + 1) % len(
                 self.stg.wall_colors
             )
-            self.render_maze()
-            self.m.mlx_put_image_to_window(
-                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-            )
+            self.render_grid()
+            self.render_pattern()
+            self.render_terminals()
+            self.render_path()
 
     def clear(self) -> None:
         self._put_box(
@@ -97,7 +83,8 @@ class MazeView:
 
     def show(self) -> None:
         self.render_text()
-        self.render_maze()
+        self.render_grid()
+        self.render_pattern()
         self.render_terminals()
         self.render_path()
         if not self.visualize_only:
@@ -128,22 +115,32 @@ class MazeView:
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=color,
             )
+        self.m.mlx_put_image_to_window(
+            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+        )
 
     def render_path(self) -> None:
         color = self.stg.path_color if self.show_path else self.stg.off_color
-        path = self.adapter.shortest_path[1:-1]
+        path = self.adapter.shortest_path[:-1]
 
-        for cell in path:
+        for cell, dir in zip(path, self.adapter.path_dirs, strict=True):
             x = cell.col * self.stg.cell_size
             y = cell.row * self.stg.cell_size
 
-            self._put_box(
-                y=y + self.stg.wall_size,
-                x=x + self.stg.wall_size,
-                width=self.stg.cell_size - 2 * self.stg.wall_size,
-                height=self.stg.cell_size - 2 * self.stg.wall_size,
-                color=color,
+            if cell is not path[0]:
+                self._put_box(
+                    y=y + self.stg.wall_size,
+                    x=x + self.stg.wall_size,
+                    width=self.stg.cell_size - 2 * self.stg.wall_size,
+                    height=self.stg.cell_size - 2 * self.stg.wall_size,
+                    color=color,
+                )
+            self.carve_walls(cell, dir, color)
+
+            self.m.mlx_put_image_to_window(
+                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
             )
+            sleep(self.stg.animation_tick)
 
     def render_pattern(self) -> None:
         pattern = self.adapter.pattern
@@ -162,11 +159,12 @@ class MazeView:
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=self.stg.pattern_color,
             )
+        self.m.mlx_put_image_to_window(
+            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+        )
 
     def render_text(self) -> None:
-        algorithm = (
-            "N/A" if self.visualize_only else self.adapter.cfg.algorithm
-        )
+        algorithm = self.adapter.cfg.algorithm if self.adapter.cfg else "N/A"
         self.m.mlx_string_put(
             self.mlx_ptr,
             self.win_ptr,
@@ -238,50 +236,126 @@ class MazeView:
             for xx in range(width):
                 self._put_pixel(y=y + yy, x=x + xx, color=color)
 
-    def render_maze(
+    def render_grid(self) -> None:
+        height = len(self.adapter.grid)
+        width = len(self.adapter.grid[0])
+
+        color = self.stg.wall_colors[self.wall_color_idx]
+        if self.adapter.cfg:
+            maze = [
+                [Cell(15, r, c) for c in range(width)] for r in range(height)
+            ]
+        else:
+            maze = self.adapter.grid
+
+        for row in range(height):
+            for col in range(width):
+                self.paint_walls(maze[row][col], color)
+        self.m.mlx_put_image_to_window(
+            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+        )
+        # sleep(1)
+        if self.adapter.cfg:
+            for x, y, dir in self.adapter.gen.render_order:
+                cell = self.adapter.grid[y][x]
+                self.carve_walls(cell, dir, self.stg.off_color)
+                sleep(self.stg.animation_tick)
+                self.m.mlx_put_image_to_window(
+                    self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+                )
+
+    def paint_walls(
         self,
+        cell: Cell,
+        color: int,
     ) -> None:
-        for row in self.adapter.grid:
-            for cell in row:
-                y = cell.row * self.stg.cell_size
-                x = cell.col * self.stg.cell_size
+        y = cell.row * self.stg.cell_size
+        x = cell.col * self.stg.cell_size
 
-                # north
-                if cell.n:
-                    self._put_box(
-                        y=y,
-                        x=x,
-                        width=self.stg.cell_size,
-                        height=self.stg.wall_size,
-                        color=self.stg.wall_colors[self.wall_color_idx],
-                    )
+        # north
+        if cell.n:
+            self._put_box(
+                x=x,
+                y=y,
+                width=self.stg.cell_size,
+                height=self.stg.wall_size,
+                color=color,
+            )
 
-                # south
-                if cell.s:
-                    self._put_box(
-                        y=y + self.stg.cell_size - self.stg.wall_size,
-                        x=x,
-                        width=self.stg.cell_size,
-                        height=self.stg.wall_size,
-                        color=self.stg.wall_colors[self.wall_color_idx],
-                    )
+        # south
+        if cell.s:
+            self._put_box(
+                x=x,
+                y=y + self.stg.cell_size - self.stg.wall_size,
+                width=self.stg.cell_size,
+                height=self.stg.wall_size,
+                color=color,
+            )
 
-                # east wall
-                if cell.e:
-                    self._put_box(
-                        y=y,
-                        x=x + self.stg.cell_size - self.stg.wall_size,
-                        width=self.stg.wall_size,
-                        height=self.stg.cell_size,
-                        color=self.stg.wall_colors[self.wall_color_idx],
-                    )
+        # east wall
+        if cell.e:
+            self._put_box(
+                x=x + self.stg.cell_size - self.stg.wall_size,
+                y=y,
+                width=self.stg.wall_size,
+                height=self.stg.cell_size,
+                color=color,
+            )
 
-                # west
-                if cell.w:
-                    self._put_box(
-                        x=x,
-                        y=y,
-                        width=self.stg.wall_size,
-                        height=self.stg.cell_size,
-                        color=self.stg.wall_colors[self.wall_color_idx],
-                    )
+        # west
+        if cell.w:
+            self._put_box(
+                x=x,
+                y=y,
+                width=self.stg.wall_size,
+                height=self.stg.cell_size,
+                color=color,
+            )
+
+    def carve_walls(self, cell: Cell, dir: str, color: int) -> None:
+        y = cell.row * self.stg.cell_size
+        x = cell.col * self.stg.cell_size
+
+        # color = self.stg.off_color
+        h_width = self.stg.cell_size - 2 * self.stg.wall_size
+        v_height = self.stg.cell_size - 2 * self.stg.wall_size
+
+        # north
+        if dir == "N":
+            self._put_box(
+                x=x + self.stg.wall_size,
+                y=y - self.stg.wall_size,
+                width=h_width,
+                height=self.stg.wall_size * 2,
+                color=color,
+            )
+
+        # south
+        elif dir == "S":
+            self._put_box(
+                x=x + self.stg.wall_size,
+                y=y + self.stg.cell_size - self.stg.wall_size,
+                width=h_width,
+                height=self.stg.wall_size * 2,
+                color=color,
+            )
+
+        # west
+        elif dir == "W":
+            self._put_box(
+                x=x - self.stg.wall_size,
+                y=y + self.stg.wall_size,
+                width=self.stg.wall_size * 2,
+                height=v_height,
+                color=color,
+            )
+
+        # east wall
+        elif dir == "E":
+            self._put_box(
+                x=x + self.stg.cell_size - self.stg.wall_size,
+                y=y + self.stg.wall_size,
+                width=self.stg.wall_size * 2,
+                height=v_height,
+                color=color,
+            )

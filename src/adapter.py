@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from mazegen import MazeGenerator
@@ -18,8 +19,10 @@ class Generator(Protocol):
     maze_exit: tuple[int, int]
     shortest_path: str
     pattern: list[tuple[int, int]] | None
+    render_order: list[tuple[int, int, str]]
 
     def generate(self, seed: int | None = None) -> None: ...
+    def export(self, output_file: Path) -> None: ...
 
 
 class MazeGeneratorFile:
@@ -30,6 +33,7 @@ class MazeGeneratorFile:
         self.maze_exit: tuple[int, int] = (0, 0)
         self.shortest_path: str = ""
         self.pattern: list[tuple[int, int]] | None = None
+        self.render_order: list[tuple[int, int, str]] = []
 
         self.generate()
 
@@ -55,24 +59,21 @@ class MazeGeneratorFile:
         except ValueError as e:
             raise AdapterError("Invalid entries in the output file") from e
 
+    def export(self, output_file: Path) -> None:
+        pass
+
 
 class Adapter:
-    grid: list[list[Cell]]
-    entry: Cell
-    exit: Cell
-    shortest_path: list[Cell]
-    gen: Generator
-    output_file: str
-    pattern: list[tuple[int, int]] | None
-    seed: int | None
-
     def __init__(
-        self, output_file: str, cfg: ConfigData | None, stg: Settings
+        self,
+        output_file: str,
+        cfg: ConfigData | None,
+        stg: Settings,
     ) -> None:
-        self.seed = None
+        self.cfg: ConfigData | None = None
         if cfg:
-            self.seed = cfg.seed
             self.cfg = cfg
+            self.seed: int | None = cfg.seed
             self.output_file = cfg.output_file.name
             self.gen = MazeGenerator(
                 size=(cfg.width, cfg.height),
@@ -87,7 +88,7 @@ class Adapter:
             self.gen = MazeGeneratorFile(output_file)
 
     def generate(self, seed: int | None = None) -> None:
-        self.seed = self.cfg.seed if not seed else seed
+        self.seed = self.cfg.seed if self.cfg and seed is None else seed
         self.gen.generate(self.seed)
         self.grid = self._create_grid(self.gen.maze)
         self.entry = self.grid[self.gen.maze_entry[1]][self.gen.maze_entry[0]]
@@ -97,13 +98,17 @@ class Adapter:
             self.shortest_path = self._get_shortest_path(
                 self.gen.shortest_path
             )
+        self.path_dirs = self._path_dirs()
+
+    def _path_dirs(self) -> list[str]:
+        return list(self.gen.shortest_path)
 
     def _create_grid(self, maze: list[list[int]]) -> list[list[Cell]]:
         grid: list[list[Cell]] = []
         for row in range(len(maze)):
             row_cells: list[Cell] = []
             for col in range(len(maze[0])):
-                cell = Cell(maze, row, col)
+                cell = Cell(maze[row][col], row, col)
                 row_cells.append(cell)
             grid.append(row_cells)
         return grid
@@ -125,3 +130,6 @@ class Adapter:
 
             shortest_path.append(self.grid[y][x])
         return shortest_path
+
+    def export(self, output_file: Path) -> None:
+        self.gen.export(output_file)
