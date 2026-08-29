@@ -84,15 +84,13 @@ class MazeView:
     def show(self) -> None:
         self.render_text()
         self.render_grid()
-        self.render_pattern()
         self.render_terminals()
+        self.render_pattern()
         self.render_path()
         if not self.visualize_only:
             self.render_pattern()
 
-        self.m.mlx_put_image_to_window(
-            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-        )
+        self.put_image()
         self.m.mlx_loop(self.mlx_ptr)
 
     def render_terminals(self) -> None:
@@ -115,9 +113,7 @@ class MazeView:
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=color,
             )
-        self.m.mlx_put_image_to_window(
-            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-        )
+        self.put_image()
 
     def render_path(self) -> None:
         color = self.stg.path_color if self.show_path else self.stg.off_color
@@ -137,9 +133,7 @@ class MazeView:
                 )
             self.carve_walls(cell, dir, color)
 
-            self.m.mlx_put_image_to_window(
-                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-            )
+            self.put_image()
             sleep(self.stg.animation_tick)
 
     def render_pattern(self) -> None:
@@ -159,9 +153,13 @@ class MazeView:
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=self.stg.pattern_color,
             )
-        self.m.mlx_put_image_to_window(
-            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-        )
+        self.put_image()
+
+    def put_image(self) -> None:
+        for _ in range(82):
+            self.m.mlx_put_image_to_window(
+                self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
+            )
 
     def render_text(self) -> None:
         algorithm = self.adapter.cfg.algorithm if self.adapter.cfg else "N/A"
@@ -251,18 +249,13 @@ class MazeView:
         for row in range(height):
             for col in range(width):
                 self.paint_walls(maze[row][col], color)
-        self.m.mlx_put_image_to_window(
-            self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-        )
-        # sleep(1)
+        self.put_image()
         if self.adapter.cfg:
-            for x, y, dir in self.adapter.gen.render_order:
+            for x, y, dir in self.adapter.gen.carving_order:
                 cell = self.adapter.grid[y][x]
                 self.carve_walls(cell, dir, self.stg.off_color)
                 sleep(self.stg.animation_tick)
-                self.m.mlx_put_image_to_window(
-                    self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
-                )
+                self.put_image()
 
     def paint_walls(
         self,

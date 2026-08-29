@@ -21,7 +21,7 @@ class Settings:
         self.exit_color = 0x00FF00  # green
         self.text_color = 0xFFFFFF  # white
 
-        self.animation_tick = 0.02
+        self.animation_tick = 0.1
 
         self.window_title: str = "a-maze-ing"
 

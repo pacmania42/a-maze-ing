@@ -19,7 +19,7 @@ class Generator(Protocol):
     maze_exit: tuple[int, int]
     shortest_path: str
     pattern: list[tuple[int, int]] | None
-    render_order: list[tuple[int, int, str]]
+    carving_order: list[tuple[int, int, str]]
 
     def generate(self, seed: int | None = None) -> None: ...
     def export(self, output_file: Path) -> None: ...
@@ -33,7 +33,7 @@ class MazeGeneratorFile:
         self.maze_exit: tuple[int, int] = (0, 0)
         self.shortest_path: str = ""
         self.pattern: list[tuple[int, int]] | None = None
-        self.render_order: list[tuple[int, int, str]] = []
+        self.carving_order: list[tuple[int, int, str]] = []
 
         self.generate()
 
