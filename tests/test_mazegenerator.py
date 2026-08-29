@@ -4,6 +4,7 @@ from mazegen import MazeGenerator
 
 
 def test_mazegenerator_init_params() -> None:
+    """Verify mazegenerator init params."""
     sig = inspect.signature(MazeGenerator.__init__)
     assert set(sig.parameters) == set(
         [
@@ -20,11 +21,13 @@ def test_mazegenerator_init_params() -> None:
 
 
 def test_mazegenerator_generate_params() -> None:
+    """Verify mazegenerator generate params."""
     sig = inspect.signature(MazeGenerator.generate)
     assert list(sig.parameters) == ["self", "seed"]
 
 
 def test_mazegenerator_shortest_path() -> None:
+    """Verify mazegenerator shortest path."""
     maze = MazeGenerator()
     maze.generate()
     assert isinstance(maze.shortest_path, str)

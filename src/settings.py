@@ -1,5 +1,11 @@
+"""Central visual and animation settings for the MLX interface."""
+
+
 class Settings:
+    """Store dimensions, colors, timing, title, and the required 42 pattern."""
+
     def __init__(self) -> None:
+        """Initialize the default rendering and animation configuration."""
         self.cell_size = 50
         self.wall_size = self.cell_size // 10
 
@@ -16,7 +22,7 @@ class Settings:
 
         self.off_color = 0x000000  # black
         self.pattern_color = 0x800080  # purple
-        self.path_color = 0xFFFF00  # green
+        self.path_color = 0xFFFF00  # yellow
         self.entry_color = 0xFF0000  # red
         self.exit_color = 0x00FF00  # green
         self.text_color = 0xFFFFFF  # white

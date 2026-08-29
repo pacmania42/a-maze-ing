@@ -1,5 +1,17 @@
+"""Cell model used by the graphical maze representation."""
+
+
 class Cell:
+    """Represent one maze cell and the state of its four walls."""
+
     def __init__(self, val: int, row: int, col: int) -> None:
+        """Decode the four wall bits in ``val`` and store grid coordinates.
+
+        Args:
+            val (int): Value for `val`.
+            row (int): Value for `row`.
+            col (int): Value for `col`.
+        """
         self.row = row
         self.col = col
 

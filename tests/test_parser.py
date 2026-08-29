@@ -12,6 +12,14 @@ from src.parser import Parser
 
 # Utility: write a config to a temp file
 def write_config(content: str) -> str:
+    """Create a temporary configuration file for parser tests.
+
+    Args:
+        content (str): Value for `content`.
+
+    Returns:
+        str: Result produced by `write_config`.
+    """
     tf = tempfile.NamedTemporaryFile("w+", delete=False)
     tf.write(content)
     tf.flush()
@@ -22,8 +30,13 @@ def write_config(content: str) -> str:
 
 
 def run_parser_with_file(config_path: str) -> ConfigData:
-    """
-    Run the parser simulating CLI input by mocking sys.argv.
+    """Run the parser simulating CLI input by mocking sys.argv.
+
+    Args:
+        config_path (str): Value for `config_path`.
+
+    Returns:
+        ConfigData: Result produced by `run_parser_with_file`.
     """
     parser = Parser()
     with mock.patch.object(sys, "argv", ["prog", config_path]):
@@ -31,6 +44,11 @@ def run_parser_with_file(config_path: str) -> ConfigData:
 
 
 def test_valid_config(tmp_path: Path) -> None:
+    """Verify valid config.
+
+    Args:
+        tmp_path (Path): Value for `tmp_path`.
+    """
     config_text = f"""
 WIDTH=15
 HEIGHT=12
@@ -52,6 +70,7 @@ PERFECT=True
 
 
 def test_missing_key() -> None:
+    """Verify missing key."""
     config_text = """
 WIDTH=15
 ENTRY=0,0
@@ -69,6 +88,7 @@ OUTPUT_FILE=maze.txt
 
 
 def test_unknown_key() -> None:
+    """Verify unknown key."""
     config_text = """
 WIDTH=15
 HEIGHT=12
@@ -90,6 +110,7 @@ ALIEN=42
 
 
 def test_non_integer_width() -> None:
+    """Verify non integer width."""
     config_text = """
 WIDTH=foo
 HEIGHT=12
@@ -109,6 +130,7 @@ PERFECT=True
 
 
 def test_extraneous_value_line() -> None:
+    """Verify extraneous value line."""
     config_text = """
 WIDTH=10
 HEIGHT=10

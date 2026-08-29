@@ -11,9 +11,18 @@ from src.settings import Settings
 
 
 class MazeView:
+    """Render and interact with a maze using the MiniLibX Python binding."""
+
     def __init__(
         self, adapter: Adapter, visualize_only: bool, stg: Settings
     ) -> None:
+        """Create the MLX window, image buffer, and input hook for a maze.
+
+        Args:
+            adapter (Adapter): Value for `adapter`.
+            visualize_only (bool): Value for `visualize_only`.
+            stg (Settings): Rendering settings used by the application.
+        """
         self.adapter = adapter
         self.visualize_only = visualize_only
         self.stg = stg
@@ -45,6 +54,12 @@ class MazeView:
         self.m.mlx_key_hook(self.win_ptr, self.keybinding_dispatch, {})
 
     def keybinding_dispatch(self, keycode: int, _: dict[str, Any]) -> None:
+        """Handle escape, regeneration, path visibility, and wall colors.
+
+        Args:
+            keycode (int): Value for `keycode`.
+            _ (dict[str, Any]): Value for `_`.
+        """
         if keycode == 0xFF1B:  # escape
             self.m.mlx_destroy_image(self.mlx_ptr, self.img_addr)
             self.m.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
@@ -67,12 +82,14 @@ class MazeView:
             self.wall_color_idx = (self.wall_color_idx + 1) % len(
                 self.stg.wall_colors
             )
+            self.clear()
             self.render_grid()
             self.render_pattern()
             self.render_terminals()
             self.render_path()
 
     def clear(self) -> None:
+        """Fill the maze image buffer with the background color."""
         self._put_box(
             0,
             0,
@@ -82,6 +99,7 @@ class MazeView:
         )
 
     def show(self) -> None:
+        """Render the initial scene and enter the MLX event loop."""
         self.render_text()
         self.render_grid()
         self.render_terminals()
@@ -94,6 +112,7 @@ class MazeView:
         self.m.mlx_loop(self.mlx_ptr)
 
     def render_terminals(self) -> None:
+        """Draw the entry and exit cells with their configured colors."""
         terminals = (self.adapter.entry, "entry"), (self.adapter.exit, "exit")
 
         for cell, name in terminals:
@@ -116,6 +135,7 @@ class MazeView:
         self.put_image()
 
     def render_path(self) -> None:
+        """Animate drawing or hiding the shortest path cell by cell."""
         color = self.stg.path_color if self.show_path else self.stg.off_color
         path = self.adapter.shortest_path[:-1]
 
@@ -137,6 +157,7 @@ class MazeView:
             sleep(self.stg.animation_tick)
 
     def render_pattern(self) -> None:
+        """Draw the generator-provided 42 pattern inside the maze."""
         pattern = self.adapter.pattern
 
         if not pattern:
@@ -156,12 +177,14 @@ class MazeView:
         self.put_image()
 
     def put_image(self) -> None:
+        """Push the current image buffer to the MLX window."""
         for _ in range(82):
             self.m.mlx_put_image_to_window(
                 self.mlx_ptr, self.win_ptr, self.img_addr, 0, 0
             )
 
     def render_text(self) -> None:
+        """Display keybindings and the active generation algorithm."""
         algorithm = self.adapter.cfg.algorithm if self.adapter.cfg else "N/A"
         self.m.mlx_string_put(
             self.mlx_ptr,
@@ -221,6 +244,13 @@ class MazeView:
         )
 
     def _put_pixel(self, y: int, x: int, color: int) -> None:
+        """Write one RGBA pixel directly into the MLX image buffer.
+
+        Args:
+            y (int): Vertical coordinate.
+            x (int): Horizontal coordinate.
+            color (int): Color value used for drawing.
+        """
         offset = (y * self.ll) + (x * (self.bpp // 8))
         self.data_addr[offset] = (color) & 0xFF
         self.data_addr[offset + 1] = (color >> 8) & 0xFF
@@ -230,11 +260,21 @@ class MazeView:
     def _put_box(
         self, y: int, x: int, width: int, height: int, color: int
     ) -> None:
+        """Fill a rectangular area of the image buffer with one color.
+
+        Args:
+            y (int): Vertical coordinate.
+            x (int): Horizontal coordinate.
+            width (int): Width in pixels or cells.
+            height (int): Height in pixels or cells.
+            color (int): Color value used for drawing.
+        """
         for yy in range(height):
             for xx in range(width):
                 self._put_pixel(y=y + yy, x=x + xx, color=color)
 
     def render_grid(self) -> None:
+        """Draw maze walls and animate carving when generation data exists."""
         height = len(self.adapter.grid)
         width = len(self.adapter.grid[0])
 
@@ -262,6 +302,12 @@ class MazeView:
         cell: Cell,
         color: int,
     ) -> None:
+        """Paint every closed wall of a cell using the selected wall color.
+
+        Args:
+            cell (Cell): Maze cell to process.
+            color (int): Color value used for drawing.
+        """
         y = cell.row * self.stg.cell_size
         x = cell.col * self.stg.cell_size
 
@@ -306,6 +352,13 @@ class MazeView:
             )
 
     def carve_walls(self, cell: Cell, dir: str, color: int) -> None:
+        """Color the passage between a cell and its neighbour in ``dir``.
+
+        Args:
+            cell (Cell): Maze cell to process.
+            dir (str): Movement direction.
+            color (int): Color value used for drawing.
+        """
         y = cell.row * self.stg.cell_size
         x = cell.col * self.stg.cell_size
 
