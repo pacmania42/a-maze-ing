@@ -24,38 +24,15 @@ from pydantic import (
 
 
 class ParseError(Exception):
-    """
-    Exception raised for errors encountered during configuration parsing or
-    validation.
-    """
+    """Exception raised for errors encountered during configuration parsing or
+    validation."""
 
     # Custom exception for parsing/validation errors
     pass
 
 
 class ConfigData(BaseModel):
-    """
-    Configuration data for maze generation and solving.
-
-    Attributes
-    ----------
-    width : int
-        Maze width (must be non-negative).
-    height : int
-        Maze height (must be non-negative).
-    entry : tuple[int, int]
-        Entry cell coordinates (x, y).
-    exit : tuple[int, int]
-        Exit cell coordinates (x, y).
-    output_file : Path
-        Output path where the maze will be saved.
-    perfect : bool, optional
-        If True, generates a "perfect" maze. Defaults to False.
-    seed : Optional[int], optional
-        Randomization seed, if any.
-    algorithm : Optional[Literal['prim', 'wilson']]
-        Maze generation algorithm. Can be 'prim' or 'wilson'.
-    """
+    """Configuration data for maze generation and solving."""
 
     model_config = ConfigDict(
         extra="forbid"
@@ -72,23 +49,13 @@ class ConfigData(BaseModel):
     @field_validator("output_file")
     @classmethod
     def check_output_file_is_writable_file(cls, v: Path) -> Path:
-        """
-        Validates that the output file (if already existing) is writable.
+        """Validates that the output file (if already existing) is writable.
 
-        Parameters
-        ----------
-        v : Path
-            The output file path.
+        Args:
+            v (Path): Value for `v`.
 
-        Returns
-        -------
-        Path
-            The same Path, if writable.
-
-        Raises
-        ------
-        ParseError
-            If the file exists and is not writable.
+        Returns:
+            Path: Result produced by `check_output_file_is_writable_file`.
         """
         if v.exists() and not os.access(v, os.W_OK):
             raise ParseError(f"Output file '{v}' is not writable")
@@ -96,19 +63,11 @@ class ConfigData(BaseModel):
 
     @model_validator(mode="after")
     def check_entry_exit_within_bounds(self) -> "ConfigData":
-        """
-        Model-level validator to ensure entry and exit are within the maze
+        """Model-level validator to ensure entry and exit are within the maze
         bounds and do not overlap.
 
-        Returns
-        -------
-        ConfigData
-            Self (for model chaining).
-
-        Raises
-        ------
-        ParseError
-            If entry/exit are out of range or duplicate.
+        Returns:
+            'ConfigData': Result produced by `check_entry_exit_within_bounds`.
         """
         for name, (x, y) in (("entry", self.entry), ("exit", self.exit)):
             # Check x and y are within the boundaries

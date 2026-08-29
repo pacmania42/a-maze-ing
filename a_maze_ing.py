@@ -9,6 +9,7 @@ from src.settings import Settings
 
 
 def main() -> None:
+    """Parse input, prepare the maze, and start the graphical interface."""
     parser = Parser()
     res = parser.parse_args()
 

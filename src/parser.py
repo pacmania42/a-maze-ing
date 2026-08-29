@@ -15,25 +15,15 @@ from src.models import ConfigData, ParseError
 
 
 class Parser:
-    default_output: str = "output_maze.txt"
-    """
-    Parser for loading and validating maze configuration files.
+    """Parse command-line arguments and validated maze configuration files."""
 
-    Methods
-    -------
-    parse() -> ConfigData
-        Parses CLI args, loads config, validates, and returns config data as a
-        model object.
-    """
+    default_output: str = "output_maze.txt"
 
     def parse_args(self) -> Namespace:
-        """
-        Parse the command-line argument to obtain the target file path.
+        """Parse the command-line argument to obtain the target file path.
 
-        Returns
-        -------
-        Path
-          : dictionary-like object containing values for `file` and `visualize`
+        Returns:
+            Namespace: Result produced by `parse_args`.
         """
         parser = ArgumentParser(
             prog="uv run python a_maze_ing.py",
@@ -54,22 +44,13 @@ class Parser:
         return parser.parse_args()
 
     def parse_config_file(self, config_file: str) -> ConfigData:
-        """
-        Parses the config file.
+        """Parses the config file.
 
-        Parameters:
-          config_file: configuration file location.
+        Args:
+            config_file (str): Path to the configuration file.
 
-        Returns
-        -------
-        ConfigData
-            A validated configuration data object for the maze.
-
-        Raises
-        ------
-        ParseError
-            If the file is not accessible or values are not valid per the
-            ConfigData model.
+        Returns:
+            ConfigData: Result produced by `parse_config_file`.
         """
         data = self._parse_lines(config_file)
         normalized_data = self._normalize(data)
@@ -79,24 +60,13 @@ class Parser:
             raise ParseError(f"Parser Error: {e.errors()}") from e
 
     def _parse_lines(self, config_file: str) -> dict[str, str]:
-        """
-        Parse config file lines into a dictionary.
+        """Parse config file lines into a dictionary.
 
-        Parameters
-        ----------
-        config_file : Path
-            Path to the configuration file.
+        Args:
+            config_file (str): Path to the configuration file.
 
-        Returns
-        -------
-        dict[str, str]
-            Keys/values from all valid (non-empty, non-comment) lines in the
-            file.
-
-        Raises
-        ------
-        ParseError
-            If a line is in the wrong format or the file is inaccessible.
+        Returns:
+            dict[str, str]: Result produced by `_parse_lines`.
         """
         data: dict[str, str] = {}
         try:
@@ -120,24 +90,13 @@ class Parser:
             raise ParseError(f"{config_file} not accessible: {err}") from err
 
     def _normalize(self, data: dict[str, str]) -> dict[str, Any]:
-        """
-        Normalize parsed dictionary's keys and values for model validation.
+        """Normalize parsed dictionary's keys and values for model validation.
 
-        Parameters
-        ----------
-        data : dict[str, str]
-            Dictionary from the config file.
+        Args:
+            data (dict[str, str]): Value for `data`.
 
-        Returns
-        -------
-        dict[str, Any]
-            Dictionary ready for use by ConfigData. Entry/exit values split to
-            lists; keys lowercased.
-
-        Raises
-        ------
-        ParseError
-            If ENTRY or EXIT are not in 'x,y' form.
+        Returns:
+            dict[str, Any]: Result produced by `_normalize`.
         """
         new_dict: dict[str, Any] = {}
 
