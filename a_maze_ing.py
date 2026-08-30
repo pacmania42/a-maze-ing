@@ -36,7 +36,7 @@ def main() -> None:
         print(e)
         return
 
-    ui = MazeView(adapter, res.visualize_only, stg)
+    ui = MazeView(adapter, stg)
     ui.show()
 
 
