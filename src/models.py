@@ -37,8 +37,8 @@ class ConfigData(BaseModel):
     model_config = ConfigDict(
         extra="forbid"
     )  # Forbid extra fields not specified here
-    width: int = Field(ge=0)
-    height: int = Field(ge=0)
+    width: int = Field(ge=2)
+    height: int = Field(ge=2)
     entry: tuple[int, int]
     exit: tuple[int, int]
     output_file: Path
@@ -58,7 +58,7 @@ class ConfigData(BaseModel):
             Path: Result produced by `check_output_file_is_writable_file`.
         """
         if v.exists() and not os.access(v, os.W_OK):
-            raise ParseError(f"Output file '{v}' is not writable")
+            raise ParseError(f"ParseError: Output file '{v}' is not writable")
         return v
 
     @model_validator(mode="after")
@@ -72,9 +72,15 @@ class ConfigData(BaseModel):
         for name, (x, y) in (("entry", self.entry), ("exit", self.exit)):
             # Check x and y are within the boundaries
             if not (0 <= x < self.width):
-                raise ParseError(f"{name} x-coordinate out of bounds")
+                raise ParseError(
+                        f"ParseError: {name}'s x coordinate has to be between"
+                        f" 0 - {self.width-1}"
+                        )
             if not (0 <= y < self.height):
-                raise ParseError(f"{name} y-coordinate out of bounds")
+                raise ParseError(
+                        f"ParseError: {name}'s y coordinate has to be between"
+                        f" 0 - {self.height-1}"
+                        )
         if self.entry == self.exit:
-            raise ParseError("entry and exit must differ")
+            raise ParseError("ParseError: entry and exit must differ")
         return self
