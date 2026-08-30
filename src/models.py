@@ -42,7 +42,7 @@ class ConfigData(BaseModel):
     entry: tuple[int, int]
     exit: tuple[int, int]
     output_file: Path
-    perfect: bool = False
+    perfect: bool
     seed: int = 42
     algorithm: Literal["IB", "wilson"] = "wilson"
 
@@ -73,14 +73,14 @@ class ConfigData(BaseModel):
             # Check x and y are within the boundaries
             if not (0 <= x < self.width):
                 raise ParseError(
-                        f"ParseError: {name}'s x coordinate has to be between"
-                        f" 0 - {self.width-1}"
-                        )
+                    f"ParseError: {name}'s x coordinate has to be between"
+                    f" 0 - {self.width - 1}"
+                )
             if not (0 <= y < self.height):
                 raise ParseError(
-                        f"ParseError: {name}'s y coordinate has to be between"
-                        f" 0 - {self.height-1}"
-                        )
+                    f"ParseError: {name}'s y coordinate has to be between"
+                    f" 0 - {self.height - 1}"
+                )
         if self.entry == self.exit:
             raise ParseError("ParseError: entry and exit must differ")
         return self
