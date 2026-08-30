@@ -6,12 +6,12 @@ class Settings:
 
     def __init__(self) -> None:
         """Initialize the default rendering and animation configuration."""
-        self.cell_size = 50
+        self.cell_size = 70
         self.wall_size = self.cell_size // 10
 
-        self.footer_height = 160
-        self.text_x_offset = 30
-        self.text_y_offset = 30
+        self.txt_pane_width = 400
+        self.x_offset = 30
+        self.y_offset = 30
         self.text_line_inset = 25
 
         self.wall_colors = [
