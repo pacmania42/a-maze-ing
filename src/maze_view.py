@@ -55,6 +55,7 @@ class MazeView(Mlx):  # type: ignore[misc]
         self.ll: int = ll
 
         self.mlx_key_hook(self.win_ptr, self._on_keypress, None)
+        self.mlx_hook(self.win_ptr, 0x21, 0, self._on_event, None)
         self.mlx_loop_hook(self.mlx_ptr, self.app_loop, None)
         self.put_image = partial(
             self.mlx_put_image_to_window,
@@ -91,6 +92,11 @@ class MazeView(Mlx):  # type: ignore[misc]
                     if i == 0:
                         self.animation_gens[1] = self.render_path()
 
+    def _on_event(self, _: Any) -> None:
+        self.mlx_destroy_image(self.mlx_ptr, self.img_ptr)
+        self.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
+        self.mlx_loop_exit(self.mlx_ptr)
+
     def _on_keypress(self, key: int, _: Any) -> None:
         """Handle keypresses.
 
@@ -99,6 +105,8 @@ class MazeView(Mlx):  # type: ignore[misc]
             _ (Any): discarded callback data.
         """
         if key == self.stg.close_win:
+            self.mlx_destroy_image(self.mlx_ptr, self.img_ptr)
+            self.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
             self.mlx_loop_exit(self.mlx_ptr)
 
         elif key == self.stg.toggle_animation:
