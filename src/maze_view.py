@@ -124,8 +124,8 @@ class MazeView(Mlx):  # type: ignore[misc]
             y = cell.row * self.stg.cell_size
 
             self._put_box(
-                y=y + self.stg.wall_size,
-                x=x + self.stg.wall_size,
+                row=y + self.stg.wall_size,
+                col=x + self.stg.wall_size,
                 width=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=color,
@@ -142,8 +142,8 @@ class MazeView(Mlx):  # type: ignore[misc]
 
             if cell is not path[0]:
                 self._put_box(
-                    y=y + self.stg.wall_size,
-                    x=x + self.stg.wall_size,
+                    row=y + self.stg.wall_size,
+                    col=x + self.stg.wall_size,
                     width=self.stg.cell_size - 2 * self.stg.wall_size,
                     height=self.stg.cell_size - 2 * self.stg.wall_size,
                     color=color,
@@ -162,8 +162,8 @@ class MazeView(Mlx):  # type: ignore[misc]
             y = row * self.stg.cell_size
 
             self._put_box(
-                y=y + self.stg.wall_size,
-                x=x + self.stg.wall_size,
+                row=y + self.stg.wall_size,
+                col=x + self.stg.wall_size,
                 width=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=self.stg.pattern_color,
@@ -193,35 +193,28 @@ class MazeView(Mlx):  # type: ignore[misc]
         self.write(y=self.stg.y_offset + 390, string="W | Change (W)all color")
         self.write(y=self.stg.y_offset + 420, string="ESC | Quit")
 
-    def _put_pixel(self, y: int, x: int, color: int) -> None:
-        """Write one RGBA pixel directly into the MLX image buffer.
-
-        Args:
-            y (int): Vertical coordinate.
-            x (int): Horizontal coordinate.
-            color (int): Color value used for drawing.
-        """
-        offset = (y * self.ll) + (x * (self.bpp // 8))
-        self.data_addr[offset] = (color) & 0xFF
-        self.data_addr[offset + 1] = (color >> 8) & 0xFF
-        self.data_addr[offset + 2] = (color >> 16) & 0xFF
-        self.data_addr[offset + 3] = 0xFF
-
     def _put_box(
-        self, y: int, x: int, width: int, height: int, color: int
+        self, row: int, col: int, width: int, height: int, color: int
     ) -> None:
         """Fill a rectangular area of the image buffer with one color.
 
         Args:
-            y (int): Vertical coordinate.
-            x (int): Horizontal coordinate.
+            row (int): Vertical coordinate.
+            col (int): Horizontal coordinate.
             width (int): Width in pixels or cells.
             height (int): Height in pixels or cells.
             color (int): Color value used for drawing.
         """
-        for yy in range(height):
-            for xx in range(width):
-                self._put_pixel(y=y + yy, x=x + xx, color=color)
+        pixel = bytes(
+            ((color & 0xFF), (color >> 8 & 0xFF), (color >> 16 & 0xFF), 0xFF)
+        )
+        row_bytes = pixel * width
+        start = col * self.bpp // 8
+        end = start + width * self.bpp // 8
+
+        for y in range(height):
+            offset = (row + y) * self.ll
+            self.data_addr[slice(offset + start, offset + end)] = row_bytes
 
     def run_animation(
         self, rebuild_walls: bool
@@ -242,8 +235,8 @@ class MazeView(Mlx):  # type: ignore[misc]
                     y = row * self.stg.cell_size
                     x = col * self.stg.cell_size
                     self._put_box(
-                        y=y + self.stg.wall_size,
-                        x=x + self.stg.wall_size,
+                        row=y + self.stg.wall_size,
+                        col=x + self.stg.wall_size,
                         width=self.stg.cell_size - 2 * self.stg.wall_size,
                         height=self.stg.cell_size - 2 * self.stg.wall_size,
                         color=self.stg.off_color,
@@ -277,8 +270,8 @@ class MazeView(Mlx):  # type: ignore[misc]
 
         if dir == "N":
             self._put_box(
-                x=x + self.stg.wall_size,
-                y=y - self.stg.wall_size,
+                col=x + self.stg.wall_size,
+                row=y - self.stg.wall_size,
                 width=h_width,
                 height=self.stg.wall_size * 2,
                 color=color,
@@ -286,8 +279,8 @@ class MazeView(Mlx):  # type: ignore[misc]
 
         elif dir == "S":
             self._put_box(
-                x=x + self.stg.wall_size,
-                y=y + self.stg.cell_size - self.stg.wall_size,
+                col=x + self.stg.wall_size,
+                row=y + self.stg.cell_size - self.stg.wall_size,
                 width=h_width,
                 height=self.stg.wall_size * 2,
                 color=color,
@@ -295,8 +288,8 @@ class MazeView(Mlx):  # type: ignore[misc]
 
         elif dir == "W":
             self._put_box(
-                x=x - self.stg.wall_size,
-                y=y + self.stg.wall_size,
+                col=x - self.stg.wall_size,
+                row=y + self.stg.wall_size,
                 width=self.stg.wall_size * 2,
                 height=v_height,
                 color=color,
@@ -304,8 +297,8 @@ class MazeView(Mlx):  # type: ignore[misc]
 
         elif dir == "E":
             self._put_box(
-                x=x + self.stg.cell_size - self.stg.wall_size,
-                y=y + self.stg.wall_size,
+                col=x + self.stg.cell_size - self.stg.wall_size,
+                row=y + self.stg.wall_size,
                 width=self.stg.wall_size * 2,
                 height=v_height,
                 color=color,
