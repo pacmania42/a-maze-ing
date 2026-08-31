@@ -18,45 +18,49 @@ class MazeView(Mlx):  # type: ignore[misc]
 
         Args:
             adapter (Adapter): Value for `adapter`.
-            visualize_only (bool): Value for `visualize_only`.
             stg (Settings): Rendering settings used by the application.
         """
         super().__init__()
         self.adapter = adapter
         self.stg = stg
 
-        self.animation_gen: Generator[None, None, None] | None = None
+        self.animation_gens: list[Generator[None, None, None] | None] = [
+            self.render_maze(),
+            None,
+        ]
         self.last_tick = 0.0
-        self.show_path: bool = True
+        self.animate = True
+        self.show_path = True
         self.color_idx = 0
+        self.text_rendered = False
 
         self.maze_width = len(self.adapter.grid[0]) * self.stg.cell_size
         self.maze_height = len(self.adapter.grid) * self.stg.cell_size
-        self.window_height = self.maze_height
-        self.window_width = self.maze_width + self.stg.txt_pane_width
+        self.win_height = self.maze_height
+        self.win_width = self.maze_width + self.stg.txt_pane_width
 
-        self.mlx_ptr: int = self.mlx_init()
-        self.win_ptr: int = self.mlx_new_window(
+        self.mlx_ptr = self.mlx_init()
+        self.win_ptr = self.mlx_new_window(
             self.mlx_ptr,
-            self.window_width,
-            self.window_height,
+            self.win_width,
+            self.win_height,
             self.stg.window_title,
         )
-        self.img_addr = self.mlx_new_image(
+        self.img_ptr = self.mlx_new_image(
             self.mlx_ptr, self.maze_width, self.maze_height
         )
-        data_addr, bpp, ll, _ = self.mlx_get_data_addr(self.img_addr)
+        data_addr, bpp, ll, _ = self.mlx_get_data_addr(self.img_ptr)
         self.data_addr: memoryview = data_addr
-        self.bpp: int = bpp
+        self.bpp: int = bpp // 8
         self.ll: int = ll
 
-        self.mlx_key_hook(self.win_ptr, self.keybinding_dispatch, None)
-        self.mlx_loop_hook(self.mlx_ptr, self._app_loop, None)
+        self.mlx_key_hook(self.win_ptr, self._on_keypress, None)
+        self.mlx_loop_hook(self.mlx_ptr, self.app_loop, None)
         self.put_image = partial(
             self.mlx_put_image_to_window,
             self.mlx_ptr,
             self.win_ptr,
-            self.img_addr,
+            self.img_ptr,
             self.stg.txt_pane_width,
             0,
         )
@@ -68,49 +72,61 @@ class MazeView(Mlx):  # type: ignore[misc]
             color=self.stg.text_color,
         )
 
-    def _app_loop(self, _: Any) -> None:
-        now = time.perf_counter()
-
-        if not self.animation_gen:
-            return
-
-        if now - self.last_tick > self.stg.animation_tick:
-            self.last_tick = now
-            try:
-                next(self.animation_gen)
-            except StopIteration:
-                self.animation_gen = None
-
-    def start_animation(self, clear_maze: bool) -> None:
-        self.animation_gen = self.run_animation(clear_maze)
-        self.last_tick = 0.0
-
-    def keybinding_dispatch(self, keycode: int, _: dict[str, Any]) -> None:
-        """Handle escape, regeneration, path visibility, and wall colors.
+    def app_loop(self, _: Any) -> None:
+        """Run the render steps with optional animation.
 
         Args:
-            keycode (int): Value for `keycode`.
-            _ (dict[str, Any]): Value for `_`.
+            _ (Any): discarded callback data.
         """
-        if keycode == 0xFF1B:  # escape
-            self.mlx_destroy_image(self.mlx_ptr, self.img_addr)
-            self.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
-            self.mlx_loop_exit(self.mlx_ptr)
-            return
-        if keycode == 0x6D:  # m
-            self.adapter.generate(seed=randint(-1000, 1000))
-            self.start_animation(True)
-        if keycode == 0x70:  # p
-            self.show_path = not self.show_path
-            self.start_animation(False)
-        if keycode == 0x77:  # w
-            self.color_idx = (self.color_idx + 1) % len(self.stg.wall_colors)
-            self.start_animation(True)
+        for i, gen in enumerate(self.animation_gens):
+            if not gen:
+                continue
+            now = time.perf_counter()
+            if not self.animate or now - self.last_tick > self.stg.tick:
+                self.last_tick = now
+                try:
+                    next(gen)
+                except StopIteration:
+                    self.animation_gens[i] = None
+                    if i == 0:
+                        self.animation_gens[1] = self.render_path()
 
-    def show(self) -> None:
-        """Render the initial scene and enter the MLX event loop."""
-        self.start_animation(True)
-        self.mlx_loop(self.mlx_ptr)
+    def _on_keypress(self, key: int, _: Any) -> None:
+        """Handle keypresses.
+
+        Args:
+            key (int): keycode for the pressed key.
+            _ (Any): discarded callback data.
+        """
+        if key == self.stg.close_win:
+            self.mlx_loop_exit(self.mlx_ptr)
+
+        elif key == self.stg.toggle_animation:
+            self.animate = not self.animate
+
+        elif key == self.stg.toggle_path:
+            self.show_path = not self.show_path
+            self.reset_animation(1)
+
+        elif key == self.stg.new_maze:
+            self.adapter.generate(seed=randint(-1000, 1000))
+            self.reset_animation(0)
+
+        elif key == self.stg.change_wall_color:
+            self.color_idx = (self.color_idx + 1) % len(self.stg.wall_colors)
+            self.reset_animation(0)
+
+    def reset_animation(self, idx: int) -> None:
+        """Reset the appropriate animation generator.
+
+        Args:
+            idx (int): index of the animation generator.
+        """
+        if idx == 0:
+            self.animation_gens[0] = self.render_maze()
+        elif idx == 1:
+            self.animation_gens[1] = self.render_path()
+        self.last_tick = 0.0
 
     def render_terminals(self) -> None:
         """Draw the entry and exit cells with their configured colors."""
@@ -131,33 +147,9 @@ class MazeView(Mlx):  # type: ignore[misc]
                 color=color,
             )
 
-    def render_path(self) -> None:
-        """Animate drawing or hiding the shortest path cell by cell."""
-        color = self.stg.path_color if self.show_path else self.stg.off_color
-        path = self.adapter.shortest_path[:-1]
-
-        for cell, dir in zip(path, self.adapter.path_dirs, strict=True):
-            x = cell.col * self.stg.cell_size
-            y = cell.row * self.stg.cell_size
-
-            if cell is not path[0]:
-                self._put_box(
-                    row=y + self.stg.wall_size,
-                    col=x + self.stg.wall_size,
-                    width=self.stg.cell_size - 2 * self.stg.wall_size,
-                    height=self.stg.cell_size - 2 * self.stg.wall_size,
-                    color=color,
-                )
-            self._carve_walls(cell, dir, color)
-
     def render_pattern(self) -> None:
-        """Draw the generator-provided 42 pattern inside the maze."""
-        pattern = self.adapter.pattern
-
-        if not pattern:
-            return
-
-        for col, row in pattern:
+        """Draw the pattern inside the maze."""
+        for col, row in self.adapter.pattern:  # ty:ignore[not-iterable]
             x = col * self.stg.cell_size
             y = row * self.stg.cell_size
 
@@ -171,7 +163,6 @@ class MazeView(Mlx):  # type: ignore[misc]
 
     def render_text(self) -> None:
         """Display maze details and keybindings."""
-
         mode = "Generate+Visualize" if self.adapter.cfg else "Visualize-only"
         size = f"{len(self.adapter.grid[0])}X{len(self.adapter.grid)}"
         entry = f"{self.adapter.gen.maze_entry}"
@@ -188,10 +179,11 @@ class MazeView(Mlx):  # type: ignore[misc]
         self.write(y=self.stg.y_offset + 180, string=f"ALGORITHM: {algorithm}")
 
         self.write(y=self.stg.y_offset + 300, string="KEYBINDINGS")
-        self.write(y=self.stg.y_offset + 330, string="M | Regenerate (M)aze")
-        self.write(y=self.stg.y_offset + 360, string="P | Show/Hide (P)ath")
+        self.write(y=self.stg.y_offset + 330, string="M | New (M)aze")
+        self.write(y=self.stg.y_offset + 360, string="P | Toggle (P)ath")
         self.write(y=self.stg.y_offset + 390, string="W | Change (W)all color")
-        self.write(y=self.stg.y_offset + 420, string="ESC | Quit")
+        self.write(y=self.stg.y_offset + 420, string="A | Toggle (A)nimation")
+        self.write(y=self.stg.y_offset + 450, string="ESC | Quit")
 
     def _put_box(
         self, row: int, col: int, width: int, height: int, color: int
@@ -209,50 +201,70 @@ class MazeView(Mlx):  # type: ignore[misc]
             ((color & 0xFF), (color >> 8 & 0xFF), (color >> 16 & 0xFF), 0xFF)
         )
         row_bytes = pixel * width
-        start = col * self.bpp // 8
-        end = start + width * self.bpp // 8
+        start = col * self.bpp
+        end = start + width * self.bpp
 
         for y in range(height):
             offset = (row + y) * self.ll
             self.data_addr[slice(offset + start, offset + end)] = row_bytes
 
-    def run_animation(
-        self, rebuild_walls: bool
-    ) -> Generator[None, None, None]:
-        """Draw maze walls and animate carving when generation data exists."""
+    def render_maze(self) -> Generator[None, None, None]:
+        """Generate the render steps for the maze with animation."""
+        if not self.text_rendered:
+            for _ in range(2):
+                self.render_text()
+            self.text_rendered = True
 
-        yield
-        self.render_text()
+        height = len(self.adapter.grid)
+        width = len(self.adapter.grid[0])
+        color = self.stg.wall_colors[self.color_idx]
 
-        if rebuild_walls:
-            height = len(self.adapter.grid)
-            width = len(self.adapter.grid[0])
-            color = self.stg.wall_colors[self.color_idx]
+        self._put_box(0, 0, self.maze_width, self.maze_height, color)
 
-            self._put_box(0, 0, self.maze_width, self.maze_height, color)
-            for row in range(height):
-                for col in range(width):
-                    y = row * self.stg.cell_size
-                    x = col * self.stg.cell_size
-                    self._put_box(
-                        row=y + self.stg.wall_size,
-                        col=x + self.stg.wall_size,
-                        width=self.stg.cell_size - 2 * self.stg.wall_size,
-                        height=self.stg.cell_size - 2 * self.stg.wall_size,
-                        color=self.stg.off_color,
-                    )
+        for row in range(height):
+            for col in range(width):
+                y = row * self.stg.cell_size
+                x = col * self.stg.cell_size
+                self._put_box(
+                    row=y + self.stg.wall_size,
+                    col=x + self.stg.wall_size,
+                    width=self.stg.cell_size - 2 * self.stg.wall_size,
+                    height=self.stg.cell_size - 2 * self.stg.wall_size,
+                    color=self.stg.off_color,
+                )
 
-            # carve walls
-            for x, y, dir in self.adapter.gen.carving_order:
-                cell = self.adapter.grid[y][x]
-                self._carve_walls(cell, dir, self.stg.off_color)
-                self.put_image()
+        for x, y, dir in self.adapter.gen.carving_order:
+            cell = self.adapter.grid[y][x]
+            self._carve_walls(cell, dir, self.stg.off_color)
+            self.put_image()
+            if self.animate:
                 yield
 
         self.render_pattern()
         self.render_terminals()
-        self.render_path()
         self.put_image()
+
+    def render_path(self) -> Generator[None, None, None]:
+        """Generate render steps for the shortest path with animation."""
+        color = self.stg.path_color if self.show_path else self.stg.off_color
+        path = self.adapter.shortest_path[:-1]
+
+        for cell, dir in zip(path, self.adapter.path_dirs, strict=True):
+            x = cell.col * self.stg.cell_size
+            y = cell.row * self.stg.cell_size
+
+            if cell is not path[0]:
+                self._put_box(
+                    row=y + self.stg.wall_size,
+                    col=x + self.stg.wall_size,
+                    width=self.stg.cell_size - 2 * self.stg.wall_size,
+                    height=self.stg.cell_size - 2 * self.stg.wall_size,
+                    color=color,
+                )
+            self._carve_walls(cell, dir, color)
+            self.put_image()
+            if self.animate:
+                yield
 
     def _carve_walls(self, cell: Cell, dir: str, color: int) -> None:
         """Color the passage between a cell and its neighbour in ``dir``.

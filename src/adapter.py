@@ -22,7 +22,7 @@ class Generator(Protocol):
     maze_entry: tuple[int, int]
     maze_exit: tuple[int, int]
     shortest_path: str
-    pattern: list[tuple[int, int]] | None
+    pattern: list[tuple[int, int]]
     carving_order: list[tuple[int, int, str]]
 
     def generate(self, seed: int | None = None) -> None:
@@ -56,7 +56,7 @@ class MazeGeneratorFile:
         self.maze_entry: tuple[int, int] = (0, 0)
         self.maze_exit: tuple[int, int] = (0, 0)
         self.shortest_path: str = ""
-        self.pattern: list[tuple[int, int]] | None = None
+        self.pattern: list[tuple[int, int]] = []
         self.carving_order: list[tuple[int, int, str]] = []
 
         self.generate()

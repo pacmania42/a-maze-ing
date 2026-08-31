@@ -6,33 +6,40 @@ class Settings:
 
     def __init__(self) -> None:
         """Initialize the default rendering and animation configuration."""
+
+        #
+        self.tick = 1 / 60
+        self.window_title: str = "a-maze-ing"
+
+        # spacings
         self.cell_size = 72
         self.wall_size = self.cell_size // 10
-
         self.txt_pane_width = 400
         self.x_offset = 30
         self.y_offset = 30
-        self.text_line_inset = 25
+        self.inset = 25
 
-        self.wall_colors = [
-            0x0000FF,
-            0xFF0000,
-            0x00FF00,
-        ]
-
+        # colors
         self.off_color = 0x000000  # black
         self.pattern_color = 0x800080  # purple
         self.path_color = 0xFFFF00  #
         self.entry_color = 0xFF00FF  #
         self.exit_color = 0x00FFFF  #
         self.text_color = 0xFFFFFF  # white
+        self.wall_colors = (
+            0x0000FF,
+            0xFF0000,
+            0x00FF00,
+        )
 
-        self.enable_animation = True
-        self.animation_tick = 1 / 60
+        # keybindings
+        self.close_win = 0xFF1B
+        self.new_maze = 0x6D
+        self.toggle_path = 0x70
+        self.change_wall_color = 0x77
+        self.toggle_animation = 0x61
 
-        self.window_title: str = "a-maze-ing"
-
-        self.pattern = [
+        self.pattern = (
             (0, 0),
             (0, 1),
             (0, 2),
@@ -51,4 +58,4 @@ class Settings:
             (4, 4),
             (5, 4),
             (6, 4),
-        ]
+        )
