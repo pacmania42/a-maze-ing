@@ -22,7 +22,7 @@ class Generator(Protocol):
     maze_entry: tuple[int, int]
     maze_exit: tuple[int, int]
     shortest_path: str
-    pattern: list[tuple[int, int]] | None
+    pattern: list[tuple[int, int]]
     carving_order: list[tuple[int, int, str]]
 
     def generate(self, seed: int | None = None) -> None:
@@ -56,10 +56,40 @@ class MazeGeneratorFile:
         self.maze_entry: tuple[int, int] = (0, 0)
         self.maze_exit: tuple[int, int] = (0, 0)
         self.shortest_path: str = ""
-        self.pattern: list[tuple[int, int]] | None = None
+        self.pattern: list[tuple[int, int]] = []
         self.carving_order: list[tuple[int, int, str]] = []
 
         self.generate()
+        self._get_render_order()
+
+    def _get_render_order(self) -> None:
+        self.carving_order.clear()
+        width, height = len(self.maze[0]), len(self.maze)
+        movements = (
+            (0b0001, "N", 0, -1, "S"),
+            (0b0100, "S", 0, 1, "N"),
+            (0b0010, "E", 1, 0, "W"),
+            (0b1000, "W", -1, 0, "E"),
+        )
+        carved: list[tuple[int, int, str]] = []
+
+        for row in range(height):
+            for col in range(width):
+                val = self.maze[row][col]
+
+                for mask, dir, n_col, n_row, n_dir in movements:
+                    n_col += col
+                    n_row += row
+
+                    if (col, row, dir) in carved:
+                        continue
+                    if (0 > n_col or n_col >= width) or (
+                        0 > n_row or n_col >= height
+                    ):
+                        continue
+                    if not val & mask:
+                        self.carving_order.append((col, row, dir))
+                        carved.extend([(col, row, dir), (n_col, n_row, n_dir)])
 
     def generate(self, seed: int | None = None) -> None:
         """Reload maze rows, terminals, and solution from the output file.

@@ -36,8 +36,8 @@ def main() -> None:
         print(e)
         return
 
-    ui = MazeView(adapter, res.visualize_only, stg)
-    ui.show()
+    ui = MazeView(adapter, stg)
+    ui.mlx_loop(ui.mlx_ptr)
 
 
 if __name__ == "__main__":
