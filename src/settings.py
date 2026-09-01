@@ -17,26 +17,25 @@ class Settings:
         self.txt_pane_width = 400
         self.x_offset = 30
         self.y_offset = 30
-        self.inset = 25
 
         # colors
         self.off_color = 0x000000  # black
         self.pattern_color = 0x800080  # purple
-        self.path_color = 0xFFFF00  #
-        self.entry_color = 0xFF00FF  #
-        self.exit_color = 0x00FFFF  #
+        self.entry_color = 0xFF0000  #
+        self.exit_color = 0x0000FF  #
         self.text_color = 0xFFFFFF  # white
-        self.wall_colors = (
-            0x0000FF,
-            0xFF0000,
-            0x00FF00,
+        self.colors = (
+            (0x1E51A4, 0xFFFF00),
+            (0xBD632F, 0xF7C7DB),
+            (0x52528C, 0xA000CC),
+            (0x32746D, 0xFFFFFF),
         )
 
         # keybindings
         self.close_win = 0xFF1B
         self.new_maze = 0x6D
         self.toggle_path = 0x70
-        self.change_wall_color = 0x77
+        self.change_color = 0x63
         self.toggle_animation = 0x61
 
         self.pattern = (

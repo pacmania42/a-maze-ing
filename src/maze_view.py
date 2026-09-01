@@ -21,21 +21,21 @@ class MazeView(Mlx):  # type: ignore[misc]
             stg (Settings): Rendering settings used by the application.
         """
         super().__init__()
-        self.adapter = adapter
+        self.adp = adapter
         self.stg = stg
 
-        self.animation_gens: list[Generator[None, None, None] | None] = [
-            self.render_maze(),
-            None,
-        ]
+        self.text_animation = self.render_text_gen()
+        self.maze_animation = self.render_maze()
+        self.esp_animation = self.render_esp_cells()
+        self.path_animation = self.render_path()
+        self.animator: Generator[None, None, None] | None = self.animate()
         self.last_tick = 0.0
-        self.animate = True
+        self.animation_enabled = False
         self.show_path = True
         self.color_idx = 0
-        self.text_rendered = False
 
-        self.maze_width = len(self.adapter.grid[0]) * self.stg.cell_size
-        self.maze_height = len(self.adapter.grid) * self.stg.cell_size
+        self.maze_width = len(self.adp.grid[0]) * self.stg.cell_size
+        self.maze_height = len(self.adp.grid) * self.stg.cell_size
         self.win_height = self.maze_height
         self.win_width = self.maze_width + self.stg.txt_pane_width
 
@@ -79,18 +79,42 @@ class MazeView(Mlx):  # type: ignore[misc]
         Args:
             _ (Any): discarded callback data.
         """
-        for i, gen in enumerate(self.animation_gens):
-            if not gen:
-                continue
-            now = time.perf_counter()
-            if not self.animate or now - self.last_tick > self.stg.tick:
-                self.last_tick = now
-                try:
-                    next(gen)
-                except StopIteration:
-                    self.animation_gens[i] = None
-                    if i == 0:
-                        self.animation_gens[1] = self.render_path()
+        if self.animator is None:
+            return
+        now = time.perf_counter()
+        if not self.animation_enabled or now - self.last_tick > self.stg.tick:
+            self.last_tick = now
+            try:
+                next(self.animator)
+            except StopIteration:
+                self.animator = None
+
+    def animate(self) -> Generator[None, None, None]:
+        """Runs the animation in a pipeline-manner.
+
+        Returns:
+            Generator[None, None, None]: generator that runs the animations in
+                the pipeline sequentially.
+        """
+        yield from self.text_animation
+        yield from self.maze_animation
+        yield from self.esp_animation
+        yield from self.path_animation
+
+    def reset_animation(self, idx: int) -> None:
+        """Reset the appropriate animation generator.
+
+        Args:
+            idx (int): index of the animation generator.
+        """
+        if idx == 1:
+            self.path_animation = self.render_path()
+        elif idx == 0:
+            self.maze_animation = self.render_maze()
+            self.esp_animation = self.render_esp_cells()
+            self.path_animation = self.render_path()
+        self.animator = self.animate()
+        self.last_tick = 0.0
 
     def _on_event(self, _: Any) -> None:
         self.mlx_destroy_image(self.mlx_ptr, self.img_ptr)
@@ -105,78 +129,31 @@ class MazeView(Mlx):  # type: ignore[misc]
             _ (Any): discarded callback data.
         """
         if key == self.stg.close_win:
-            self.mlx_destroy_image(self.mlx_ptr, self.img_ptr)
-            self.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
-            self.mlx_loop_exit(self.mlx_ptr)
+            self._on_event(None)
 
         elif key == self.stg.toggle_animation:
-            self.animate = not self.animate
+            self.animation_enabled = not self.animation_enabled
 
         elif key == self.stg.toggle_path:
             self.show_path = not self.show_path
             self.reset_animation(1)
 
         elif key == self.stg.new_maze:
-            self.adapter.generate(seed=randint(-1000, 1000))
+            self.adp.generate(seed=randint(-1000, 1000))
             self.reset_animation(0)
 
-        elif key == self.stg.change_wall_color:
-            self.color_idx = (self.color_idx + 1) % len(self.stg.wall_colors)
+        elif key == self.stg.change_color:
+            self.color_idx = (self.color_idx + 1) % len(self.stg.colors)
             self.reset_animation(0)
-
-    def reset_animation(self, idx: int) -> None:
-        """Reset the appropriate animation generator.
-
-        Args:
-            idx (int): index of the animation generator.
-        """
-        if idx == 0:
-            self.animation_gens[0] = self.render_maze()
-        elif idx == 1:
-            self.animation_gens[1] = self.render_path()
-        self.last_tick = 0.0
-
-    def render_terminals(self) -> None:
-        """Draw the entry and exit cells with their configured colors."""
-        terminals = (
-            (self.adapter.entry, self.stg.entry_color),
-            (self.adapter.exit, self.stg.exit_color),
-        )
-
-        for cell, color in terminals:
-            x = cell.col * self.stg.cell_size
-            y = cell.row * self.stg.cell_size
-
-            self._put_box(
-                row=y + self.stg.wall_size,
-                col=x + self.stg.wall_size,
-                width=int(self.stg.cell_size - 2 * self.stg.wall_size),
-                height=int(self.stg.cell_size - 2 * self.stg.wall_size),
-                color=color,
-            )
-
-    def render_pattern(self) -> None:
-        """Draw the pattern inside the maze."""
-        for col, row in self.adapter.pattern:  # ty:ignore[not-iterable]
-            x = col * self.stg.cell_size
-            y = row * self.stg.cell_size
-
-            self._put_box(
-                row=y + self.stg.wall_size,
-                col=x + self.stg.wall_size,
-                width=int(self.stg.cell_size - 2 * self.stg.wall_size),
-                height=int(self.stg.cell_size - 2 * self.stg.wall_size),
-                color=self.stg.pattern_color,
-            )
 
     def render_text(self) -> None:
         """Display maze details and keybindings."""
-        mode = "Generate+Visualize" if self.adapter.cfg else "Visualize-only"
-        size = f"{len(self.adapter.grid[0])}X{len(self.adapter.grid)}"
-        entry = f"{self.adapter.gen.maze_entry}"
-        exit = f"{self.adapter.gen.maze_exit}"
-        perfect = f"{self.adapter.cfg.perfect if self.adapter.cfg else 'N/A'}"
-        algorithm = self.adapter.cfg.algorithm if self.adapter.cfg else "N/A"
+        mode = "Generate+Visualize" if self.adp.cfg else "Visualize-only"
+        size = f"{len(self.adp.grid[0])}X{len(self.adp.grid)}"
+        entry = f"{self.adp.gen.maze_entry}"
+        exit = f"{self.adp.gen.maze_exit}"
+        perfect = f"{self.adp.cfg.perfect if self.adp.cfg else 'N/A'}"
+        algorithm = self.adp.cfg.algorithm if self.adp.cfg else "N/A"
 
         self.write(y=self.stg.y_offset, string="DETAILS")
         self.write(y=self.stg.y_offset + 30, string=f"MODE: {mode}")
@@ -184,48 +161,25 @@ class MazeView(Mlx):  # type: ignore[misc]
         self.write(y=self.stg.y_offset + 90, string=f"ENTRY: {entry}")
         self.write(y=self.stg.y_offset + 120, string=f"EXIT: {exit}")
         self.write(y=self.stg.y_offset + 150, string=f"PERFECT: {perfect}")
-        self.write(y=self.stg.y_offset + 180, string=f"ALGORITHM: {algorithm}")
+        self.write(y=self.stg.y_offset + 180, string=f"ALGO: {algorithm}")
 
         self.write(y=self.stg.y_offset + 300, string="KEYBINDINGS")
         self.write(y=self.stg.y_offset + 330, string="M | New (M)aze")
         self.write(y=self.stg.y_offset + 360, string="P | Toggle (P)ath")
-        self.write(y=self.stg.y_offset + 390, string="W | Change (W)all color")
+        self.write(y=self.stg.y_offset + 390, string="C | Change (C)olors")
         self.write(y=self.stg.y_offset + 420, string="A | Toggle (A)nimation")
         self.write(y=self.stg.y_offset + 450, string="ESC | Quit")
 
-    def _put_box(
-        self, row: int, col: int, width: int, height: int, color: int
-    ) -> None:
-        """Fill a rectangular area of the image buffer with one color.
-
-        Args:
-            row (int): Vertical coordinate.
-            col (int): Horizontal coordinate.
-            width (int): Width in pixels or cells.
-            height (int): Height in pixels or cells.
-            color (int): Color value used for drawing.
-        """
-        pixel = bytes(
-            ((color & 0xFF), (color >> 8 & 0xFF), (color >> 16 & 0xFF), 0xFF)
-        )
-        row_bytes = pixel * width
-        start = col * self.bpp
-        end = start + width * self.bpp
-
-        for y in range(height):
-            offset = (row + y) * self.ll
-            self.data_addr[slice(offset + start, offset + end)] = row_bytes
-
     def render_maze(self) -> Generator[None, None, None]:
-        """Generate the render steps for the maze with animation."""
-        if not self.text_rendered:
-            for _ in range(2):
-                self.render_text()
-            self.text_rendered = True
+        """Generate the render steps for the maze with animation.
 
-        height = len(self.adapter.grid)
-        width = len(self.adapter.grid[0])
-        color = self.stg.wall_colors[self.color_idx]
+        Returns:
+            Generator[None, None, None]: generator that runs _carve_walls per
+                cell in the maze.
+        """
+        height = len(self.adp.grid)
+        width = len(self.adp.grid[0])
+        color = self.stg.colors[self.color_idx][0]
 
         self._put_box(0, 0, self.maze_width, self.maze_height, color)
 
@@ -241,23 +195,65 @@ class MazeView(Mlx):  # type: ignore[misc]
                     color=self.stg.off_color,
                 )
 
-        for x, y, dir in self.adapter.gen.carving_order:
-            cell = self.adapter.grid[y][x]
+        for x, y, dir in self.adp.gen.carving_order:
+            cell = self.adp.grid[y][x]
             self._carve_walls(cell, dir, self.stg.off_color)
             self.put_image()
-            if self.animate:
+            if self.animation_enabled:
                 yield
 
-        self.render_pattern()
-        self.render_terminals()
-        self.put_image()
+    def render_esp_cells(self) -> Generator[None, None, None]:
+        """Draw the pattern inside the maze.
+
+        Returns:
+            Generator[None, None, None]: generator that runs cell-wise render
+        """
+        esp_cells = [
+            (
+                self.adp.entry.col,
+                self.adp.entry.row,
+                self.stg.entry_color,
+            ),
+            (
+                self.adp.exit.col,
+                self.adp.exit.row,
+                self.stg.exit_color,
+            ),
+            *[
+                (col, row, self.stg.pattern_color)
+                for col, row in self.adp.pattern  # ty:ignore[not-iterable]
+            ],
+        ]
+
+        for col, row, color in esp_cells:
+            x = col * self.stg.cell_size
+            y = row * self.stg.cell_size
+
+            self._put_box(
+                row=y + self.stg.wall_size,
+                col=x + self.stg.wall_size,
+                width=int(self.stg.cell_size - 2 * self.stg.wall_size),
+                height=int(self.stg.cell_size - 2 * self.stg.wall_size),
+                color=color,
+            )
+            self.put_image()
+            if self.animation_enabled:
+                yield
 
     def render_path(self) -> Generator[None, None, None]:
-        """Generate render steps for the shortest path with animation."""
-        color = self.stg.path_color if self.show_path else self.stg.off_color
-        path = self.adapter.shortest_path[:-1]
+        """Generate render steps for the shortest path with animation.
 
-        for cell, dir in zip(path, self.adapter.path_dirs, strict=True):
+        Returns:
+            Generator[None, None, None]: generator that runs per cell in path
+        """
+        color = (
+            self.stg.colors[self.color_idx][1]
+            if self.show_path
+            else self.stg.off_color
+        )
+        path = self.adp.shortest_path[:-1]
+
+        for cell, dir in zip(path, self.adp.path_dirs, strict=True):
             x = cell.col * self.stg.cell_size
             y = cell.row * self.stg.cell_size
 
@@ -271,7 +267,7 @@ class MazeView(Mlx):  # type: ignore[misc]
                 )
             self._carve_walls(cell, dir, color)
             self.put_image()
-            if self.animate:
+            if self.animation_enabled:
                 yield
 
     def _carve_walls(self, cell: Cell, dir: str, color: int) -> None:
@@ -323,3 +319,37 @@ class MazeView(Mlx):  # type: ignore[misc]
                 height=v_height,
                 color=color,
             )
+
+    def _put_box(
+        self, row: int, col: int, width: int, height: int, color: int
+    ) -> None:
+        """Fill a rectangular area of the image buffer with one color.
+
+        Args:
+            row (int): Vertical coordinate.
+            col (int): Horizontal coordinate.
+            width (int): Width in pixels or cells.
+            height (int): Height in pixels or cells.
+            color (int): Color value used for drawing.
+        """
+        pixel = bytes(
+            ((color & 0xFF), (color >> 8 & 0xFF), (color >> 16 & 0xFF), 0xFF)
+        )
+        row_bytes = pixel * width
+        start = col * self.bpp
+        end = start + width * self.bpp
+
+        for y in range(height):
+            offset = (row + y) * self.ll
+            self.data_addr[slice(offset + start, offset + end)] = row_bytes
+
+    def render_text_gen(self) -> Generator[None, None, None]:
+        """A work-around to solve the partial text rendering issue, by running
+        it twice.
+
+        Returns:
+            Generator[None, None, None]: generator that runs render_text twice.
+        """
+        for _ in range(2):
+            self.render_text()
+            yield
