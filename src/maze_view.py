@@ -30,7 +30,7 @@ class MazeView(Mlx):  # type: ignore[misc]
         self.path_animation = self.render_path()
         self.animator: Generator[None, None, None] | None = self.animate()
         self.last_tick = 0.0
-        self.animation_enabled = False
+        self.animation_enabled = True
         self.show_path = True
         self.color_idx = 0
 
@@ -198,9 +198,11 @@ class MazeView(Mlx):  # type: ignore[misc]
         for x, y, dir in self.adp.gen.carving_order:
             cell = self.adp.grid[y][x]
             self._carve_walls(cell, dir, self.stg.off_color)
-            self.put_image()
             if self.animation_enabled:
+                self.put_image()
                 yield
+        if not self.animation_enabled:
+            self.put_image()
 
     def render_esp_cells(self) -> Generator[None, None, None]:
         """Draw the pattern inside the maze.
@@ -236,9 +238,11 @@ class MazeView(Mlx):  # type: ignore[misc]
                 height=int(self.stg.cell_size - 2 * self.stg.wall_size),
                 color=color,
             )
-            self.put_image()
             if self.animation_enabled:
+                self.put_image()
                 yield
+        if not self.animation_enabled:
+            self.put_image()
 
     def render_path(self) -> Generator[None, None, None]:
         """Generate render steps for the shortest path with animation.
@@ -266,9 +270,11 @@ class MazeView(Mlx):  # type: ignore[misc]
                     color=color,
                 )
             self._carve_walls(cell, dir, color)
-            self.put_image()
             if self.animation_enabled:
+                self.put_image()
                 yield
+        if not self.animation_enabled:
+            self.put_image()
 
     def _carve_walls(self, cell: Cell, dir: str, color: int) -> None:
         """Color the passage between a cell and its neighbour in ``dir``.

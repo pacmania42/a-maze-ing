@@ -14,20 +14,20 @@ class Settings:
         # spacings
         self.cell_size = 72
         self.wall_size = self.cell_size // 10
-        self.txt_pane_width = 400
+        self.txt_pane_width = 350
         self.x_offset = 30
         self.y_offset = 30
 
         # colors
-        self.off_color = 0x000000  # black
-        self.pattern_color = 0x800080  # purple
-        self.entry_color = 0xFF0000  #
-        self.exit_color = 0x0000FF  #
-        self.text_color = 0xFFFFFF  # white
+        self.off_color = 0x000000
+        self.pattern_color = 0x800080
+        self.entry_color = 0xFF0000
+        self.exit_color = 0x0000FF
+        self.text_color = 0x00FF00
         self.colors = (
             (0x1E51A4, 0xFFFF00),
-            (0xBD632F, 0xF7C7DB),
-            (0x52528C, 0xA000CC),
+            (0xBD632F, 0x00FF00),
+            (0x52528C, 0xFF8500),
             (0x32746D, 0xFFFFFF),
         )
 
