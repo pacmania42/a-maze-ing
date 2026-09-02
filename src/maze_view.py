@@ -5,8 +5,7 @@ from typing import Any, Generator
 
 from mlx import Mlx
 
-from src.adapter import Adapter
-from src.cell import Cell
+from src.adapter import Adapter, Direction
 from src.settings import Settings
 
 
@@ -55,7 +54,7 @@ class MazeView(Mlx):  # type: ignore[misc]
         self.ll: int = ll
 
         self.mlx_key_hook(self.win_ptr, self._on_keypress, None)
-        self.mlx_hook(self.win_ptr, 0x21, 0, self._on_event, None)
+        self.mlx_hook(self.win_ptr, 0x21, 0, self.exit, None)
         self.mlx_loop_hook(self.mlx_ptr, self.app_loop, None)
         self.put_image = partial(
             self.mlx_put_image_to_window,
@@ -116,7 +115,8 @@ class MazeView(Mlx):  # type: ignore[misc]
         self.animator = self.animate()
         self.last_tick = 0.0
 
-    def _on_event(self, _: Any) -> None:
+    def exit(self, _: Any) -> None:
+        """Exit the app cleanly."""
         self.mlx_destroy_image(self.mlx_ptr, self.img_ptr)
         self.mlx_destroy_window(self.mlx_ptr, self.win_ptr)
         self.mlx_loop_exit(self.mlx_ptr)
@@ -129,7 +129,7 @@ class MazeView(Mlx):  # type: ignore[misc]
             _ (Any): discarded callback data.
         """
         if key == self.stg.close_win:
-            self._on_event(None)
+            self.exit(None)
 
         elif key == self.stg.toggle_animation:
             self.animation_enabled = not self.animation_enabled
@@ -151,8 +151,8 @@ class MazeView(Mlx):  # type: ignore[misc]
         for _ in range(2):
             mode = "Generate+Visualize" if self.adp.cfg else "Visualize-only"
             size = f"{len(self.adp.grid[0])}X{len(self.adp.grid)}"
-            entry = f"{self.adp.gen.maze_entry}"
-            exit = f"{self.adp.gen.maze_exit}"
+            entry = f"{self.adp.entry}"
+            exit = f"{self.adp.exit}"
             perfect = f"{self.adp.cfg.perfect if self.adp.cfg else 'N/A'}"
             algorithm = self.adp.cfg.algorithm if self.adp.cfg else "N/A"
 
@@ -187,15 +187,15 @@ class MazeView(Mlx):  # type: ignore[misc]
         for row in range(self.adp.height):
             for col in range(self.adp.width):
                 self._put_box(
-                    xx=(col * self.stg.cell_size) + self.stg.wall_size,
-                    yy=(row * self.stg.cell_size) + self.stg.wall_size,
+                    x=(col * self.stg.cell_size) + self.stg.wall_size,
+                    y=(row * self.stg.cell_size) + self.stg.wall_size,
                     width=self.stg.cell_size - 2 * self.stg.wall_size,
                     height=self.stg.cell_size - 2 * self.stg.wall_size,
                     color=self.stg.off_color,
                 )
 
-        for col, row, dir in self.adp.gen.carving_order:
-            self._carve_walls(self.adp.grid[row][col], dir, self.stg.off_color)
+        for col, row, dirr in self.adp.render_order:
+            self._remove_cell_wall(col, row, dirr, self.stg.off_color)
             if self.animation_enabled:
                 self.put_image()
                 yield
@@ -227,8 +227,8 @@ class MazeView(Mlx):  # type: ignore[misc]
 
         for col, row, color in esp_cells:
             self._put_box(
-                xx=(col * self.stg.cell_size) + self.stg.wall_size,
-                yy=(row * self.stg.cell_size) + self.stg.wall_size,
+                x=(col * self.stg.cell_size) + self.stg.wall_size,
+                y=(row * self.stg.cell_size) + self.stg.wall_size,
                 width=self.stg.cell_size - 2 * self.stg.wall_size,
                 height=self.stg.cell_size - 2 * self.stg.wall_size,
                 color=color,
@@ -250,82 +250,81 @@ class MazeView(Mlx):  # type: ignore[misc]
             if self.show_path
             else self.stg.off_color
         )
-        path = self.adp.shortest_path[:-1]
 
-        for cell, dir in zip(path, self.adp.path_dirs, strict=True):
-            if cell is not path[0]:
+        for i, (col, row, d) in enumerate(self.adp.shortest_path):
+            if i > 0:
                 self._put_box(
-                    yy=(cell.row * self.stg.cell_size) + self.stg.wall_size,
-                    xx=(cell.col * self.stg.cell_size) + self.stg.wall_size,
+                    y=(row * self.stg.cell_size) + self.stg.wall_size,
+                    x=(col * self.stg.cell_size) + self.stg.wall_size,
                     width=self.stg.cell_size - 2 * self.stg.wall_size,
                     height=self.stg.cell_size - 2 * self.stg.wall_size,
                     color=color,
                 )
-            self._carve_walls(cell, dir, color)
+            self._remove_cell_wall(col, row, d, color)
             if self.animation_enabled:
                 self.put_image()
                 yield
         if not self.animation_enabled:
             self.put_image()
 
-    def _carve_walls(self, cell: Cell, dir: str, color: int) -> None:
-        """Color the passage between a cell and its neighbour in ``dir``.
+    def _remove_cell_wall(
+        self, col: int, row: int, dir: Direction, color: int
+    ) -> None:
+        """Remove the shared wall between current and neighbor cell in ``dir``.
 
         Args:
-            cell (Cell): Maze cell to process.
-            dir (str): Movement direction.
+            col (int): Column of the cell.
+            row (int): Row of the cell.
+            dir (Direction): Movement direction.
             color (int): Color value used for drawing.
         """
-        y = cell.row * self.stg.cell_size
-        x = cell.col * self.stg.cell_size
+        x = col * self.stg.cell_size
+        y = row * self.stg.cell_size
 
         h_width = self.stg.cell_size - 2 * self.stg.wall_size
         v_height = self.stg.cell_size - 2 * self.stg.wall_size
 
-        if dir == "N":
+        if dir == Direction.NORTH:
             self._put_box(
-                xx=x + self.stg.wall_size,
-                yy=y - self.stg.wall_size,
+                x=x + self.stg.wall_size,
+                y=y - self.stg.wall_size,
                 width=h_width,
                 height=self.stg.wall_size * 2,
                 color=color,
             )
-
-        elif dir == "S":
+        elif dir == Direction.SOUTH:
             self._put_box(
-                xx=x + self.stg.wall_size,
-                yy=y + self.stg.cell_size - self.stg.wall_size,
+                x=x + self.stg.wall_size,
+                y=y + self.stg.cell_size - self.stg.wall_size,
                 width=h_width,
                 height=self.stg.wall_size * 2,
                 color=color,
             )
-
-        elif dir == "W":
+        elif dir == Direction.EAST:
             self._put_box(
-                xx=x - self.stg.wall_size,
-                yy=y + self.stg.wall_size,
+                x=x + self.stg.cell_size - self.stg.wall_size,
+                y=y + self.stg.wall_size,
                 width=self.stg.wall_size * 2,
                 height=v_height,
                 color=color,
             )
-
-        elif dir == "E":
+        elif dir == Direction.WEST:
             self._put_box(
-                xx=x + self.stg.cell_size - self.stg.wall_size,
-                yy=y + self.stg.wall_size,
+                x=x - self.stg.wall_size,
+                y=y + self.stg.wall_size,
                 width=self.stg.wall_size * 2,
                 height=v_height,
                 color=color,
             )
 
     def _put_box(
-        self, xx: int, yy: int, width: int, height: int, color: int
+        self, x: int, y: int, width: int, height: int, color: int
     ) -> None:
         """Fill a rectangular area of the image buffer with one color.
 
         Args:
-            col (int): Horizontal coordinate.
-            row (int): Vertical coordinate.
+            x (int): Horizontal coordinate.
+            y (int): Vertical coordinate.
             width (int): Width in pixels or cells.
             height (int): Height in pixels or cells.
             color (int): Color value used for drawing.
@@ -334,9 +333,9 @@ class MazeView(Mlx):  # type: ignore[misc]
             ((color & 0xFF), (color >> 8 & 0xFF), (color >> 16 & 0xFF), 0xFF)
         )
         row_bytes = pixel * width
-        start = xx * self.bpp
+        start = x * self.bpp
         end = start + width * self.bpp
 
-        for y in range(height):
-            offset = (yy + y) * self.ll
+        for r in range(height):
+            offset = (y + r) * self.ll
             self.data_addr[slice(offset + start, offset + end)] = row_bytes

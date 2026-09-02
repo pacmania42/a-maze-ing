@@ -1,5 +1,6 @@
 """Bridge maze-generator data to the representation used by the MLX UI."""
 
+from enum import Enum
 from pathlib import Path
 from typing import Iterable, Protocol, runtime_checkable
 
@@ -12,6 +13,13 @@ from src.settings import Settings
 
 class AdapterError(Exception):
     """Raised when maze data cannot be loaded or adapted for the UI."""
+
+
+class Direction(Enum):
+    NORTH = "N"
+    EAST = "E"
+    SOUTH = "S"
+    WEST = "W"
 
 
 @runtime_checkable
@@ -176,15 +184,18 @@ class Adapter:
         self.exit = self.grid[self.gen.maze_exit[1]][self.gen.maze_exit[0]]
         self.pattern = self.gen.pattern
         self.shortest_path = self._get_shortest_path(self.gen.shortest_path)
-        self.path_dirs = self._path_dirs()
+        self.render_order = self._get_render_order()
 
-    def _path_dirs(self) -> list[str]:
-        """Return the shortest-path direction string as a list of moves.
-
-        Returns:
-            list[str]: Result produced by `_path_dirs`.
-        """
-        return list(self.gen.shortest_path)
+    def _get_render_order(self) -> list[tuple[int, int, Direction]]:
+        try:
+            return [
+                (col, row, Direction(dir))
+                for col, row, dir in self.gen.carving_order
+            ]
+        except ValueError as e:
+            raise AdapterError(
+                f"AdapterError: Invalid direction {dir!r}"
+            ) from e
 
     def _create_grid(self, maze: list[list[int]]) -> list[list[Cell]]:
         """Convert hexadecimal wall values into a two-dimensional Cell grid.
@@ -204,30 +215,31 @@ class Adapter:
             grid.append(row_cells)
         return grid
 
-    def _get_shortest_path(self, path: str) -> list[Cell]:
-        """Translate an NESW solution string into the visited Cell sequence.
+    def _get_shortest_path(
+        self, path: str
+    ) -> list[tuple[int, int, Direction]]:
+        """Translate the shortest path to coordinate and direction sequence
 
         Args:
             path (str): Shortest-path direction string.
 
         Returns:
-            list[Cell]: Result produced by `_get_shortest_path`.
+            list[tuple[int, int, Direction]]: The shortest path with directions
         """
-        shortest_path: list[Cell] = []
+        shortest_path: list[tuple[int, int, Direction]] = []
         y, x = self.entry.row, self.entry.col
-        shortest_path.append(self.grid[y][x])
 
         for dirr in path:
-            if dirr == "N":
+            dir = Direction(dirr)
+            shortest_path.append((x, y, dir))
+            if dir == Direction.NORTH:
                 y -= 1
-            elif dirr == "S":
+            elif dir == Direction.SOUTH:
                 y += 1
-            elif dirr == "E":
+            elif dir == Direction.EAST:
                 x += 1
-            elif dirr == "W":
+            elif dir == Direction.WEST:
                 x -= 1
-
-            shortest_path.append(self.grid[y][x])
         return shortest_path
 
     def export(self, output_file: Path) -> None:
