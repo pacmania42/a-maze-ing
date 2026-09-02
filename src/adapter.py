@@ -170,6 +170,8 @@ class Adapter:
         self.seed = self.cfg.seed if self.cfg and seed is None else seed
         self.gen.generate(self.seed)
         self.grid = self._create_grid(self.gen.maze)
+        self.height = len(self.grid)
+        self.width = len(self.grid[0])
         self.entry = self.grid[self.gen.maze_entry[1]][self.gen.maze_entry[0]]
         self.exit = self.grid[self.gen.maze_exit[1]][self.gen.maze_exit[0]]
         self.pattern = self.gen.pattern

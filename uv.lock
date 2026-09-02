@@ -289,7 +289,7 @@ name = "mazegen42"
 version = "0.0.4"
 source = { path = "wheels/mazegen42-0.0.4-py3-none-any.whl" }
 wheels = [
-    { filename = "mazegen42-0.0.4-py3-none-any.whl", hash = "sha256:3872d238819a9910b1c614ac527596dbd3f3a9577f4bd0fc1e20aa37ff914b24" },
+    { filename = "mazegen42-0.0.4-py3-none-any.whl", hash = "sha256:347589339ab64d7495e69072baa9404fa47ef983d9a96a7d78acdb270d9fbed3" },
 ]
 
 [[package]]
