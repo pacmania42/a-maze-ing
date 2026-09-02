@@ -178,8 +178,8 @@ class MazeView(Mlx):  # type: ignore[misc]
         """Generate the render steps for the maze with animation.
 
         Returns:
-            Generator[None, None, None]: generator that runs _carve_walls per
-                cell in the maze.
+            Generator[None, None, None]: generator that runs _remove_cell_wall
+            per cell in the maze.
         """
         color = self.stg.colors[self.color_idx][0]
 
@@ -196,6 +196,17 @@ class MazeView(Mlx):  # type: ignore[misc]
 
         for col, row, dirr in self.adp.render_order:
             self._remove_cell_wall(col, row, dirr, self.stg.off_color)
+            if (
+                dirr == Direction.SOUTH
+                and (col, row) in self.adp.empty_corners
+            ):
+                self._put_box(
+                    x=((col + 1) * self.stg.cell_size) - self.stg.wall_size,
+                    y=((row + 1) * self.stg.cell_size) - self.stg.wall_size,
+                    width=2 * self.stg.wall_size,
+                    height=2 * self.stg.wall_size,
+                    color=self.stg.off_color,
+                )
             if self.animation_enabled:
                 self.put_image()
                 yield
