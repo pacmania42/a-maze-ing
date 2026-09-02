@@ -25,7 +25,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mazegen42", specifier = ">=0.0.3" },
+    { name = "mazegen42", path = "wheels/mazegen42-0.0.4-py3-none-any.whl" },
     { name = "mlx", path = "wheels/mlx-2.2-py3-none-any.whl" },
     { name = "pydantic", specifier = ">=2.13.4" },
 ]
@@ -287,10 +287,9 @@ wheels = [
 [[package]]
 name = "mazegen42"
 version = "0.0.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ff/53/91d0dfffd6a402aeec6586dce03ed79f924296285b523d069309931f59a7/mazegen42-0.0.4.tar.gz", hash = "sha256:267e5d979a14c3d3af30d6abe65e0059450c799cf82daf9d63108db3003db61f", size = 6611, upload-time = "2026-08-29T14:05:05.729Z" }
+source = { path = "wheels/mazegen42-0.0.4-py3-none-any.whl" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ea/b1/9ea59d650389817698a74707ce7c840dd114511192fc8e5d5a22598a25c5/mazegen42-0.0.4-py3-none-any.whl", hash = "sha256:db6962e0cffb8dcabefea9064d083b87e815b84a387f7271dee8f0fa431273fb", size = 6270, upload-time = "2026-08-29T14:05:05.005Z" },
+    { filename = "mazegen42-0.0.4-py3-none-any.whl", hash = "sha256:3872d238819a9910b1c614ac527596dbd3f3a9577f4bd0fc1e20aa37ff914b24" },
 ]
 
 [[package]]

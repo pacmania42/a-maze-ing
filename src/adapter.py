@@ -1,7 +1,7 @@
 """Bridge maze-generator data to the representation used by the MLX UI."""
 
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Iterable, Protocol, runtime_checkable
 
 from mazegen import MazeGenerator
 
@@ -56,7 +56,7 @@ class MazeGeneratorFile:
         self.maze_entry: tuple[int, int] = (0, 0)
         self.maze_exit: tuple[int, int] = (0, 0)
         self.shortest_path: str = ""
-        self.pattern: list[tuple[int, int]] = []
+        self.pattern: Iterable[tuple[int, int]] = []
         self.carving_order: list[tuple[int, int, str]] = []
 
         self.generate()
@@ -173,10 +173,7 @@ class Adapter:
         self.entry = self.grid[self.gen.maze_entry[1]][self.gen.maze_entry[0]]
         self.exit = self.grid[self.gen.maze_exit[1]][self.gen.maze_exit[0]]
         self.pattern = self.gen.pattern
-        if isinstance(self.gen.shortest_path, str):  # TODO: update the api
-            self.shortest_path = self._get_shortest_path(
-                self.gen.shortest_path
-            )
+        self.shortest_path = self._get_shortest_path(self.gen.shortest_path)
         self.path_dirs = self._path_dirs()
 
     def _path_dirs(self) -> list[str]:

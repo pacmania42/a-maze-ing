@@ -223,7 +223,7 @@ class MazeView(Mlx):  # type: ignore[misc]
             ),
             *[
                 (col, row, self.stg.pattern_color)
-                for col, row in self.adp.pattern  # ty:ignore[not-iterable]
+                for col, row in self.adp.pattern
             ],
         ]
 
