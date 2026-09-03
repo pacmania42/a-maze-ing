@@ -12,6 +12,7 @@ dependencies = [
 
 [tool.uv.sources]
 mlx = { path = "wheels/mlx-2.2-py3-none-any.whl" }
+mazegen42 = { path = "wheels/mazegen42-0.0.4-py3-none-any.whl" }
 
 [dependency-groups]
 dev = [

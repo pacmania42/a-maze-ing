@@ -19,3 +19,6 @@ class Cell:
         self.e = bool(val & 0b0010)
         self.s = bool(val & 0b0100)
         self.w = bool(val & 0b1000)
+
+    def __str__(self) -> str:
+        return f"({self.col}, {self.row})"

@@ -1,5 +1,6 @@
 """Bridge maze-generator data to the representation used by the MLX UI."""
 
+from enum import Enum
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -14,6 +15,13 @@ class AdapterError(Exception):
     """Raised when maze data cannot be loaded or adapted for the UI."""
 
 
+class Direction(Enum):
+    NORTH = "N"
+    EAST = "E"
+    SOUTH = "S"
+    WEST = "W"
+
+
 @runtime_checkable
 class Generator(Protocol):
     """Describe the generator API required by :class:`Adapter`."""
@@ -22,8 +30,7 @@ class Generator(Protocol):
     maze_entry: tuple[int, int]
     maze_exit: tuple[int, int]
     shortest_path: str
-    pattern: list[tuple[int, int]]
-    carving_order: list[tuple[int, int, str]]
+    wall_removal_order: list[tuple[int, int, str]]
 
     def generate(self, seed: int | None = None) -> None:
         """Generate or reload maze data, optionally using a new seed.
@@ -31,7 +38,6 @@ class Generator(Protocol):
         Args:
             seed (int | None): Optional random seed used for generation.
         """
-        ...
 
     def export(self, output_file: Path) -> None:
         """Export the current maze to ``output_file`` when supported.
@@ -39,7 +45,6 @@ class Generator(Protocol):
         Args:
             output_file (Path): Path or name of the maze output file.
         """
-        ...
 
 
 class MazeGeneratorFile:
@@ -56,22 +61,21 @@ class MazeGeneratorFile:
         self.maze_entry: tuple[int, int] = (0, 0)
         self.maze_exit: tuple[int, int] = (0, 0)
         self.shortest_path: str = ""
-        self.pattern: list[tuple[int, int]] = []
-        self.carving_order: list[tuple[int, int, str]] = []
+        self.wall_removal_order: list[tuple[int, int, str]] = []
 
         self.generate()
         self._get_render_order()
 
     def _get_render_order(self) -> None:
-        self.carving_order.clear()
+        self.wall_removal_order.clear()
         width, height = len(self.maze[0]), len(self.maze)
         movements = (
-            (0b0001, "N", 0, -1, "S"),
-            (0b0100, "S", 0, 1, "N"),
-            (0b0010, "E", 1, 0, "W"),
-            (0b1000, "W", -1, 0, "E"),
+            (0b0001, Direction.NORTH, 0, -1, Direction.SOUTH),
+            (0b0100, Direction.SOUTH, 0, 1, Direction.NORTH),
+            (0b0010, Direction.EAST, 1, 0, Direction.WEST),
+            (0b1000, Direction.WEST, -1, 0, Direction.EAST),
         )
-        carved: list[tuple[int, int, str]] = []
+        removed_walls: list[tuple[int, int, Direction]] = []
 
         for row in range(height):
             for col in range(width):
@@ -81,15 +85,17 @@ class MazeGeneratorFile:
                     n_col += col
                     n_row += row
 
-                    if (col, row, dir) in carved:
+                    if (col, row, dir) in removed_walls:
                         continue
                     if (0 > n_col or n_col >= width) or (
                         0 > n_row or n_col >= height
                     ):
                         continue
                     if not val & mask:
-                        self.carving_order.append((col, row, dir))
-                        carved.extend([(col, row, dir), (n_col, n_row, n_dir)])
+                        self.wall_removal_order.append((col, row, dir.value))
+                        removed_walls.extend(
+                            [(col, row, dir), (n_col, n_row, n_dir)]
+                        )
 
     def generate(self, seed: int | None = None) -> None:
         """Reload maze rows, terminals, and solution from the output file.
@@ -124,7 +130,6 @@ class MazeGeneratorFile:
         Args:
             output_file (Path): Path or name of the maze output file.
         """
-        pass
 
 
 class Adapter:
@@ -170,22 +175,59 @@ class Adapter:
         self.seed = self.cfg.seed if self.cfg and seed is None else seed
         self.gen.generate(self.seed)
         self.grid = self._create_grid(self.gen.maze)
+        self.height = len(self.grid)
+        self.width = len(self.grid[0])
         self.entry = self.grid[self.gen.maze_entry[1]][self.gen.maze_entry[0]]
         self.exit = self.grid[self.gen.maze_exit[1]][self.gen.maze_exit[0]]
-        self.pattern = self.gen.pattern
-        if isinstance(self.gen.shortest_path, str):  # TODO: update the api
-            self.shortest_path = self._get_shortest_path(
-                self.gen.shortest_path
-            )
-        self.path_dirs = self._path_dirs()
+        self.render_order = self._get_render_order()
+        self.pattern = self._get_pattern()
+        self.shortest_path = self._get_shortest_path(self.gen.shortest_path)
+        self.empty_corners = self._get_empty_corners()
 
-    def _path_dirs(self) -> list[str]:
-        """Return the shortest-path direction string as a list of moves.
+    def _get_empty_corners(self) -> list[tuple[int, int]]:
+        """Compute the junctions/corners without any walls around to remove
+        remennant boxes.
 
         Returns:
-            list[str]: Result produced by `_path_dirs`.
+            list[tuple[int, int]]: All cells with empty bottom right corner.
         """
-        return list(self.gen.shortest_path)
+        empty_corners: list[tuple[int, int]] = []
+
+        for row in range(self.height - 1):
+            for col in range(self.width - 1):
+                curr = self.gen.maze[row][col]
+                opp = self.gen.maze[row + 1][col + 1]
+                if not (curr & 0b0110 or opp & 0b1001):
+                    empty_corners.append((col, row))
+
+        return empty_corners
+
+    def _get_pattern(self) -> list[tuple[int, int]]:
+        """Fetch the pattern cells to render distinctly.
+
+        Returns:
+            list[tuple[int, int]]: All cells with all walls closed.
+
+        """
+        pattern: list[tuple[int, int]] = []
+
+        for row in range(self.height):
+            for col in range(self.width):
+                if self.gen.maze[row][col] == 15:
+                    pattern.append((col, row))
+
+        return pattern
+
+    def _get_render_order(self) -> list[tuple[int, int, Direction]]:
+        try:
+            return [
+                (col, row, Direction(dir))
+                for col, row, dir in self.gen.wall_removal_order
+            ]
+        except ValueError as e:
+            raise AdapterError(
+                f"AdapterError: Invalid direction {dir!r}"
+            ) from e
 
     def _create_grid(self, maze: list[list[int]]) -> list[list[Cell]]:
         """Convert hexadecimal wall values into a two-dimensional Cell grid.
@@ -205,30 +247,31 @@ class Adapter:
             grid.append(row_cells)
         return grid
 
-    def _get_shortest_path(self, path: str) -> list[Cell]:
-        """Translate an NESW solution string into the visited Cell sequence.
+    def _get_shortest_path(
+        self, path: str
+    ) -> list[tuple[int, int, Direction]]:
+        """Translate the shortest path to coordinate and direction sequence
 
         Args:
             path (str): Shortest-path direction string.
 
         Returns:
-            list[Cell]: Result produced by `_get_shortest_path`.
+            list[tuple[int, int, Direction]]: The shortest path with directions
         """
-        shortest_path: list[Cell] = []
+        shortest_path: list[tuple[int, int, Direction]] = []
         y, x = self.entry.row, self.entry.col
-        shortest_path.append(self.grid[y][x])
 
         for dirr in path:
-            if dirr == "N":
+            dir = Direction(dirr)
+            shortest_path.append((x, y, dir))
+            if dir == Direction.NORTH:
                 y -= 1
-            elif dirr == "S":
+            elif dir == Direction.SOUTH:
                 y += 1
-            elif dirr == "E":
+            elif dir == Direction.EAST:
                 x += 1
-            elif dirr == "W":
+            elif dir == Direction.WEST:
                 x -= 1
-
-            shortest_path.append(self.grid[y][x])
         return shortest_path
 
     def export(self, output_file: Path) -> None:

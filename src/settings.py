@@ -22,11 +22,11 @@ class Settings:
         self.off_color = 0x000000
         self.pattern_color = 0x800080
         self.entry_color = 0xFF0000
-        self.exit_color = 0x0000FF
+        self.exit_color = 0x00FF00
         self.text_color = 0x00FF00
         self.colors = (
             (0x1E51A4, 0xFFFF00),
-            (0xBD632F, 0x00FF00),
+            (0xBD632F, 0xABC4FF),
             (0x52528C, 0xFF8500),
             (0x32746D, 0xFFFFFF),
         )
