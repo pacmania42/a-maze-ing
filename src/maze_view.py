@@ -100,18 +100,16 @@ class MazeView(Mlx):  # type: ignore[misc]
         yield from self.esp_animation
         yield from self.path_animation
 
-    def reset_animation(self, idx: int) -> None:
-        """Reset the appropriate animation generator.
+    def reset_animation(self, all: int = True) -> None:
+        """Reset the appropriate animation sequence.
 
         Args:
-            idx (int): index of the animation generator.
+            all (bool): Whether to reset all other animations as well.
         """
-        if idx == 1:
-            self.path_animation = self.render_path()
-        elif idx == 0:
+        if all:
             self.maze_animation = self.render_maze()
             self.esp_animation = self.render_esp_cells()
-            self.path_animation = self.render_path()
+        self.path_animation = self.render_path()
         self.animator = self.animate()
         self.last_tick = 0.0
 
@@ -130,49 +128,42 @@ class MazeView(Mlx):  # type: ignore[misc]
         """
         if key == self.stg.close_win:
             self.exit(None)
-
         elif key == self.stg.toggle_animation:
             self.animation_enabled = not self.animation_enabled
-
         elif key == self.stg.toggle_path:
             self.show_path = not self.show_path
-            self.reset_animation(1)
-
+            self.reset_animation(False)
         elif key == self.stg.new_maze:
             self.adp.generate(seed=randint(-1000, 1000))
-            self.reset_animation(0)
-
+            self.reset_animation()
         elif key == self.stg.change_color:
             self.color_idx = (self.color_idx + 1) % len(self.stg.colors)
-            self.reset_animation(0)
+            self.reset_animation()
 
     def render_text(self) -> Generator[None, None, None]:
         """Display maze details and keybindings."""
-        for _ in range(2):
-            mode = "Generate+Visualize" if self.adp.cfg else "Visualize-only"
-            size = f"{len(self.adp.grid[0])}X{len(self.adp.grid)}"
-            entry = f"{self.adp.entry}"
-            exit = f"{self.adp.exit}"
-            perfect = f"{self.adp.cfg.perfect if self.adp.cfg else 'N/A'}"
-            algorithm = self.adp.cfg.algorithm if self.adp.cfg else "N/A"
+        yield  # workaround to solve X11 buffering issue
+        mode = "Generate+Visualize" if self.adp.cfg else "Visualize-only"
+        size = f"{len(self.adp.grid[0])}X{len(self.adp.grid)}"
+        entry = f"{self.adp.entry}"
+        exit = f"{self.adp.exit}"
+        perfect = f"{self.adp.cfg.perfect if self.adp.cfg else 'N/A'}"
+        algorithm = self.adp.cfg.algorithm if self.adp.cfg else "N/A"
 
-            self.write(y=self.stg.y_offset, string="DETAILS")
-            self.write(y=self.stg.y_offset + 30, string=f"MODE: {mode}")
-            self.write(y=self.stg.y_offset + 60, string=f"SIZE: {size}")
-            self.write(y=self.stg.y_offset + 90, string=f"ENTRY: {entry}")
-            self.write(y=self.stg.y_offset + 120, string=f"EXIT: {exit}")
-            self.write(y=self.stg.y_offset + 150, string=f"PERFECT: {perfect}")
-            self.write(y=self.stg.y_offset + 180, string=f"ALGO: {algorithm}")
+        self.write(y=self.stg.y_offset, string="DETAILS")
+        self.write(y=self.stg.y_offset + 30, string=f"MODE: {mode}")
+        self.write(y=self.stg.y_offset + 60, string=f"SIZE: {size}")
+        self.write(y=self.stg.y_offset + 90, string=f"ENTRY: {entry}")
+        self.write(y=self.stg.y_offset + 120, string=f"EXIT: {exit}")
+        self.write(y=self.stg.y_offset + 150, string=f"PERFECT: {perfect}")
+        self.write(y=self.stg.y_offset + 180, string=f"ALGO: {algorithm}")
 
-            self.write(y=self.stg.y_offset + 300, string="KEYBINDINGS")
-            self.write(y=self.stg.y_offset + 330, string="M | New (M)aze")
-            self.write(y=self.stg.y_offset + 360, string="P | Toggle (P)ath")
-            self.write(y=self.stg.y_offset + 390, string="C | Change (C)olors")
-            self.write(
-                y=self.stg.y_offset + 420, string="A | Toggle (A)nimation"
-            )
-            self.write(y=self.stg.y_offset + 450, string="ESC | Quit")
-            yield
+        self.write(y=self.stg.y_offset + 300, string="KEYBINDINGS")
+        self.write(y=self.stg.y_offset + 330, string="M | New (M)aze")
+        self.write(y=self.stg.y_offset + 360, string="P | Toggle (P)ath")
+        self.write(y=self.stg.y_offset + 390, string="C | Change (C)olors")
+        self.write(y=self.stg.y_offset + 420, string="A | Toggle (A)nimation")
+        self.write(y=self.stg.y_offset + 450, string="ESC | Quit")
 
     def render_maze(self) -> Generator[None, None, None]:
         """Generate the render steps for the maze with animation.
