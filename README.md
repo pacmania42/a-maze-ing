@@ -79,9 +79,10 @@ exported maze rather than a configuration file.
 
 | Key | Action |
 | --- | --- |
-| `m` | Regenerate the maze with a new random seed |
-| `p` | Show or hide the shortest path |
-| `w` | Cycle through the available wall colors |
+| `M` | Regenerate the maze with a new random seed |
+| `P` | Show or hide the shortest path |
+| `C` | Change colors|
+| `A` | Toogle animation |
 | `ESC` | Close the application |
 
 When a maze is generated from a configuration file, the visualizer animates the
@@ -352,9 +353,10 @@ features:
 
 - animated carving of a newly generated maze;
 - animated rendering of the shortest path;
-- regeneration with a new random seed using `m`;
-- shortest-path visibility toggle using `p`;
-- selectable wall colors using `w`;
+- regeneration with a new random seed using `M`;
+- shortest-path visibility toggle using `P`;
+- selectable wall colors using `C`;
+- Animation visibility using `A`;
 - rendering of the required `42` pattern;
 - display of the selected algorithm in the footer;
 - visualize-only mode for previously exported mazes;
